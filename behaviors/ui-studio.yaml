@@ -1,0 +1,23 @@
+---
+bundle:
+  name: ui-studio-behavior
+  version: 1.0.0
+  description: Composable design-to-code pipeline with four progressive modes
+
+# Add the nano-banana tool as a dependency
+tools:
+  - module: tool-nano-banana
+    source: git+https://github.com/kenotron-ms/amplifier-module-tool-nano-banana@main
+
+# Declare our specialist agents
+agents:
+  include:
+    - ui-studio:storyboard-agent
+    - ui-studio:frame-agent
+    - ui-studio:blueprint-agent
+    - ui-studio:forge-agent
+
+# Inject thin awareness pointer into root sessions
+context:
+  include:
+    - ui-studio:context/ui-studio-awareness.md
