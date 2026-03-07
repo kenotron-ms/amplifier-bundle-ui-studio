@@ -30,6 +30,43 @@ dependencies:
 
 ---
 
+## Distribution Modes
+
+The bundle ships in two forms from the same repo.
+
+### App Bundle (preferred)
+Run directly as a standalone application. Includes a provider and orchestrator so the user needs nothing else.
+
+```bash
+amplifier run --bundle git+https://github.com/kenotron-ms/amplifier-bundle-ui-studio@main
+```
+
+`bundle.md` carries the full app configuration: provider, orchestrator, tools, modes, agents, context.
+
+### Behavior
+Composable unit for developers who want to integrate the 4 modes into their own existing bundle or repo. The parent bundle provides the provider and orchestrator — `ui-studio` contributes only the modes, agents, tools, and context.
+
+```yaml
+# In someone else's bundle.md
+behaviors:
+  - source: git+https://github.com/kenotron-ms/amplifier-bundle-ui-studio@main
+    behavior: ui-studio
+```
+
+`behaviors/ui-studio.yaml` declares only the composable layer — no provider, no orchestrator.
+
+### Key distinction
+| | App bundle | Behavior |
+|--|-----------|----------|
+| Provider | Included | From parent |
+| Orchestrator | Included | From parent |
+| Modes | Included | Included |
+| Agents | Included | Included |
+| Tools (nano-banana) | Included | Included |
+| Context | Included | Included |
+
+---
+
 ## The Convergence Model
 
 Every mode is the same shape:
