@@ -75,8 +75,11 @@ Generate the screen design using nano-banana:
 - Content placeholders — realistic sample content
 
 **Save the initial version:**
+```bash
+mkdir -p ui-studio/frames/{screen-name}
 ```
-frames/{screen-name}-v1.png
+```
+ui-studio/frames/{screen-name}/v1.png
 ```
 
 Increment the version number for each iteration: `v1`, `v2`, `v3`, etc.
@@ -158,7 +161,7 @@ The full cycle for each iteration:
 ```
 ┌─────────────────────────────────────────────┐
 │ Generate screen design (nano-banana)        │
-│   → Save as frames/{screen-name}-v{n}.png   │
+│   → Save as ui-studio/frames/{screen-name}/v{n}.png │
 ├─────────────────────────────────────────────┤
 │ Present to human                            │
 │   → Image path + brief description          │
@@ -187,14 +190,14 @@ When the human approves the screen:
 
 1. **Save the final approved image:**
    ```
-   frames/{screen-name}-approved.png
+   ui-studio/frames/{screen-name}/approved.png
    ```
 
 2. **Confirm completion:**
-   > Screen "{screen-name}" approved and saved to `frames/{screen-name}-approved.png`.
+   > Screen "{screen-name}" approved and saved to `ui-studio/frames/{screen-name}/approved.png`.
 
 3. **Suggest next step:**
-   > Screen locked in. Blueprint extraction will map every component. Type `/blueprint frames/{screen-name}-approved.png` to continue.
+   > Screen locked in. Blueprint extraction will map every component. Type `/blueprint ui-studio/frames/{screen-name}/approved.png` to continue.
 
 ## Critical Principles
 

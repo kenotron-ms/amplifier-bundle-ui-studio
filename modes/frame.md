@@ -78,10 +78,10 @@ If the human says the screen looks good or explicitly approves, proceed to compl
 
 When the human approves the screen:
 
-1. **Save the final image** to `frames/{screen-name}-approved.png`
+1. **Save the final image** to `ui-studio/frames/{screen-name}/approved.png`
 2. **Announce completion** with the handoff message:
 
-> Screen locked in. Blueprint extraction will map every component. Type `/blueprint frames/{screen-name}-approved.png` to continue.
+> Screen locked in. Blueprint extraction will map every component. Type `/blueprint ui-studio/frames/{screen-name}/approved.png` to continue.
 
 ## Announcement
 
@@ -93,7 +93,7 @@ When entering this mode, announce:
 **Done when:** Human approves the screen and PNG is saved.
 
 **Golden path:** `/blueprint`
-- Tell user: "Screen locked in. Blueprint extraction will map every component. Type `/blueprint frames/{screen-name}-approved.png` to continue."
+- Tell user: "Screen locked in. Blueprint extraction will map every component. Type `/blueprint ui-studio/frames/{screen-name}/approved.png` to continue."
 
 **Dynamic transitions:**
 - If user wants to work on a different screen → stay in `/frame`, start a new convergence loop for that screen

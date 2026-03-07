@@ -55,9 +55,13 @@ This skill contains the three-stage pattern (side-by-side → annotate → analy
 
 You will receive:
 - **Blueprint directory path** — containing the spec files
-- **Target framework** — HTML/Tailwind (default), React, Vue, or Svelte
+- **Target framework** — react (default), svelte, electron, tauri, or flutter
 - **Approved mockup path** — the screenshot to converge toward
 - **Match threshold** — default 95%
+
+**Deriving `{screen-name}` and `{target}`:**
+- `{screen-name}` comes from the blueprint directory name (e.g., `ui-studio/blueprints/home/` → `home`)
+- `{target}` is the selected framework slug (e.g., `react`, `svelte`, `electron`, `tauri`, `flutter`)
 
 Read these files from the blueprint directory:
 1. `component-spec.md` — what to build (layout, components, interactions)
@@ -66,50 +70,98 @@ Read these files from the blueprint directory:
 
 ## Step 3: Check for Re-entry
 
-**Before generating any code**, check if `output/` already exists with implementation files.
+**Before generating any code**, check if `ui-studio/forge/{screen-name}/{target}/` already exists with implementation files.
 
-- If `output/` contains existing code → **do NOT regenerate from scratch**. Load the existing code and jump directly to Step 5 (the screenshot comparison loop).
-- If `output/` is empty or doesn't exist → proceed to Step 4 (initial code generation).
+- If `ui-studio/forge/{screen-name}/{target}/` contains existing code → **do NOT regenerate from scratch**. Load the existing code and jump directly to Step 5 (the screenshot comparison loop).
+- If `ui-studio/forge/{screen-name}/{target}/` is empty or doesn't exist → proceed to Step 4 (initial code generation).
 
 This is critical for resuming interrupted sessions. Never destroy existing progress.
 
-## Step 4: Initial Code Generation
+## Step 4: Flutter CLI Check (Flutter target only)
 
-Create the `output/` directory and generate the initial implementation.
+**If `{target}` is `flutter`**, run this check BEFORE generating any code:
 
 ```bash
-mkdir -p output
+flutter --version
 ```
 
-### HTML + Tailwind (default)
+If the command fails or Flutter is not found, **STOP IMMEDIATELY** with this message:
 
-Create `output/index.html`:
-- Full HTML document with Tailwind CSS via CDN
-- All design tokens from `tokens.json` applied as CSS custom properties in a `<style>` block
-- Every component from `component-spec.md` implemented in the markup
-- Placeholder images/icons at the correct dimensions from `assets.md` (use `https://placehold.co/WxH` or inline SVG placeholders)
-- Viewport meta tag set to match the mockup dimensions
+```
+Flutter CLI not found.
 
-### React + Tailwind
+Install Flutter SDK before targeting flutter:
+  https://docs.flutter.dev/get-started/install
 
-Create `output/` with:
+Once installed, run `flutter --version` to verify, then retry.
+```
+
+Do not attempt to generate any code. Do not degrade gracefully. Hard fail.
+
+## Step 4: Initial Code Generation
+
+Create the output directory:
+
+```bash
+mkdir -p ui-studio/forge/{screen-name}/{target}
+```
+
+Generate the initial implementation based on target:
+
+### `react` — React + Tailwind
+
+Create `ui-studio/forge/{screen-name}/react/`:
 - `index.html` — shell with React CDN + Tailwind CDN + mount point
 - `App.jsx` — root component implementing the full spec
-- Design tokens in a `<style>` block or Tailwind config extension
+- All design tokens from `tokens.json` applied as CSS custom properties
 
-### Vue + Tailwind
+### `svelte` — SvelteKit + Tailwind
 
-Create `output/` with:
-- `index.html` — shell with Vue CDN + Tailwind CDN + mount point
-- `App.vue` — single-file component (embedded in script) implementing the full spec
+Create `ui-studio/forge/{screen-name}/svelte/`:
+- `index.html` — shell with Svelte compiled + Tailwind CDN
+- `App.svelte` — single-file component implementing the full spec
+- All design tokens applied as CSS custom properties
 
-### Svelte + Tailwind
+### `electron` — HTML/React + Electron shell
 
-Create `output/` with:
-- `index.html` — shell with Svelte CDN/compiled + Tailwind CDN
-- `App.svelte` — component implementing the full spec
+Create `ui-studio/forge/{screen-name}/electron/`:
+- `index.html` — React + Tailwind frontend (identical to react target UI)
+- `App.jsx` — root component
+- `main.js` — Electron main process (minimal: creates BrowserWindow, loads index.html)
+- `package.json` — with electron dependency
 
-**For all frameworks:** the initial generation should be as complete as possible. Apply every token, match every layout constraint, use correct font sizes and colors. The better the initial generation, the fewer iterations needed.
+Screenshot target for comparison loop: the `index.html` via Playwright (same as web targets).
+
+### `tauri` — HTML/React + Tauri shell
+
+Create `ui-studio/forge/{screen-name}/tauri/`:
+- `index.html` — React + Tailwind frontend
+- `App.jsx` — root component
+- `src-tauri/tauri.conf.json` — minimal Tauri config pointing to index.html
+- `src-tauri/src/main.rs` — minimal Rust main (tauri::Builder default)
+
+Screenshot target for comparison loop: the `index.html` via Playwright (webview is identical to browser).
+
+### `flutter` — Dart + Flutter widgets
+
+Create `ui-studio/forge/{screen-name}/flutter/`:
+- `pubspec.yaml` — Flutter project config with dependencies
+- `lib/main.dart` — entry point with MaterialApp + home widget
+- `lib/screens/{screen_name}_screen.dart` — screen implementation
+- `lib/theme.dart` — ThemeData with all tokens from `tokens.json`
+
+**Token format for Flutter** — translate `tokens.json` to Dart:
+- Colors: `const Color(0xFF{hex without #})` e.g., `const Color(0xFF1A1A2E)`
+- Typography: `TextStyle(fontSize: {px value}, fontWeight: FontWeight.w{weight})`
+- Spacing: constants as `static const double spacingMd = 16.0;`
+
+**Screenshot for Flutter:** Use Flutter's screenshot tool instead of Playwright:
+```bash
+# Requires flutter run to be active or use integration test
+flutter screenshot --out ui-studio/forge/{screen-name}/flutter/current.png
+```
+
+**For all targets:** the initial generation should be as complete as possible. Apply every token, match every layout constraint, use correct font sizes and colors. The better the initial generation, the fewer iterations needed.
 
 ## Step 5: The Screenshot Comparison Loop
 
@@ -126,16 +178,19 @@ threshold = 95  (or configured value)
 
 ```bash
 npx playwright screenshot --browser chromium --viewport-size 390,844 \
-  output/index.html output/current.png
+  ui-studio/forge/{screen-name}/{target}/index.html \
+  ui-studio/forge/{screen-name}/{target}/current.png
 ```
 
 **CRITICAL:** Viewport size MUST match the approved mockup dimensions. Default is 390x844 (iPhone viewport). Adjust if the mockup uses different dimensions.
 
+> **Note:** For `flutter` target, use `flutter screenshot` instead — see Step 4.
+
 ### Step B: Create Side-by-Side with ImageMagick
 
 ```bash
-magick montage approved-screen.png output/current.png \
-  -geometry +0+0 -tile 2x1 output/comparison.png
+magick montage approved-screen.png ui-studio/forge/{screen-name}/{target}/current.png \
+  -geometry +0+0 -tile 2x1 ui-studio/forge/{screen-name}/{target}/comparison.png
 ```
 
 **Layout rule:** Original mockup ALWAYS on the LEFT, current implementation ALWAYS on the RIGHT. This is non-negotiable — the nano-banana analysis depends on consistent positioning.
@@ -147,8 +202,8 @@ Use nano-banana to annotate differences on the side-by-side comparison:
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  reference_image_path=output/comparison.png \
-  output_path=output/comparison-annotated.png \
+  reference_image_path=ui-studio/forge/{screen-name}/{target}/comparison.png \
+  output_path=ui-studio/forge/{screen-name}/{target}/comparison-annotated.png \
   'prompt=TAKE THIS IMAGE showing side-by-side comparison (original LEFT, implementation RIGHT) and ADD OVERLAY ANNOTATIONS:
 
 - RED circles/arrows pointing to areas that DO NOT MATCH between left and right (with text labels describing the difference)
@@ -168,7 +223,7 @@ Then analyze the annotated image to extract structured differences:
 ```bash
 amplifier tool invoke nano-banana \
   operation=analyze \
-  reference_image_path=output/comparison-annotated.png \
+  reference_image_path=ui-studio/forge/{screen-name}/{target}/comparison-annotated.png \
   'prompt=Analyze this annotated side-by-side comparison (original LEFT, implementation RIGHT).
 
 Return a JSON object with:
@@ -196,7 +251,7 @@ Pick ONE issue as priority 1 — the single most impactful visual difference.'
 Take **only the #1 highest-severity difference** from the analysis.
 
 1. Read the suggested fix
-2. Apply ONLY that single fix to the code in `output/`
+2. Apply ONLY that single fix to the code in `ui-studio/forge/{screen-name}/{target}/`
 3. Do NOT apply multiple fixes at once — this prevents conflicting changes and makes it clear what helped or hurt
 4. Save the updated file(s)
 
@@ -234,7 +289,7 @@ If `match_percentage` has NOT improved for the last **3 consecutive iterations**
 ```
 Stuck at X% match for 3 iterations. Match history: [list].
 
-Latest comparison: output/comparison-annotated.png
+Latest comparison: ui-studio/forge/{screen-name}/{target}/comparison-annotated.png
 
 The top remaining difference is: [description from latest analysis].
 
@@ -252,21 +307,26 @@ When convergence is reached (match ≥ threshold), produce the final report:
 
 ```bash
 # Save the final comparison
-cp output/comparison.png output/comparison-final.png
+cp ui-studio/forge/{screen-name}/{target}/comparison.png \
+   ui-studio/forge/{screen-name}/{target}/comparison-final.png
 ```
 
 Report:
 ```
 Converged at X% match after N iterations.
 
-Generated files:
-- output/index.html (or framework-specific files)
-- output/tokens.css (if extracted)
-- output/assets/ (if applicable)
+Generated files (ui-studio/forge/{screen-name}/{target}/):
+- react:    index.html, App.jsx
+- svelte:   index.html, App.svelte
+- electron: index.html, App.jsx, main.js, package.json
+- tauri:    index.html, App.jsx, src-tauri/tauri.conf.json, src-tauri/src/main.rs
+- flutter:  pubspec.yaml, lib/main.dart, lib/screens/, lib/theme.dart
+- tokens.css (if extracted)
+- assets/ (if applicable)
 
 Match history: [iteration-by-iteration percentages]
 
-Final comparison: output/comparison-final.png
+Final comparison: ui-studio/forge/{screen-name}/{target}/comparison-final.png
 ```
 
 ## Critical Rules
@@ -293,7 +353,7 @@ High-impact fixes first → faster convergence.
 
 ### Never Regenerate on Re-entry
 ```
-Existing output/ found → load it, screenshot it, continue the loop.
+Existing ui-studio/forge/{screen-name}/{target}/ found → load it, screenshot it, continue the loop.
 NEVER delete and start over unless explicitly told to by the human.
 ```
 

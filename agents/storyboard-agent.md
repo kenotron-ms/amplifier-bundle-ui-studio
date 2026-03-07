@@ -68,7 +68,7 @@ Invoke nano-banana:
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  output_path=.amplifier/storyboard/storyboard_v1.png \
+  output_path=ui-studio/storyboards/storyboard_v1.png \
   'prompt=Generate a complete multi-screen UX storyboard for [app description].
 
 VISUAL STYLE (applies to ALL screens):
@@ -113,8 +113,8 @@ For iterations after v1, use the previous storyboard as a reference image to pro
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  reference_image_path=.amplifier/storyboard/storyboard_v{previous}.png \
-  output_path=.amplifier/storyboard/storyboard_v{n}.png \
+  reference_image_path=ui-studio/storyboards/storyboard_v{previous}.png \
+  output_path=ui-studio/storyboards/storyboard_v{n}.png \
   'prompt=TAKE THIS STORYBOARD and make these changes:
   - [specific change from human feedback]
   - [specific change from human feedback]
@@ -136,7 +136,7 @@ After generation, present:
 Format:
 
 ```
-Generated storyboard: .amplifier/storyboard/storyboard_v{n}.png
+Generated storyboard: ui-studio/storyboards/storyboard_v{n}.png
 
 ## Screen Inventory
 1. [ScreenName] — [one-line purpose]
@@ -189,11 +189,11 @@ When the human approves the storyboard:
 
 1. **Copy the approved version as final:**
    ```bash
-   cp .amplifier/storyboard/storyboard_v{n}.png .amplifier/storyboard/storyboard_final.png
+   cp ui-studio/storyboards/storyboard_v{n}.png ui-studio/storyboards/storyboard_final.png
    ```
 
 2. **Save the screen inventory:**
-   Write the inventory to `.amplifier/storyboard/screen_inventory.md`
+   Write the inventory to `ui-studio/storyboards/screen_inventory.md`
 
 3. **Output the final screen inventory and handoff message:**
 
@@ -203,7 +203,7 @@ When the human approves the storyboard:
    2. [ScreenName] — [one-line purpose]
    3. [ScreenName] — [one-line purpose]
    ...
-   Saved: storyboard-final.png
+   Saved: ui-studio/storyboards/storyboard_final.png
    ```
 
 4. **Suggest handoff:**

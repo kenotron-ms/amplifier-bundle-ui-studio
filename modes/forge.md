@@ -30,7 +30,7 @@ Before delegating, verify a complete blueprint directory is available containing
 - `component-spec.md` — full component specification
 - `tokens.json` — design tokens (colors, spacing, typography)
 - `assets.md` — asset inventory (images, icons, dimensions)
-- `approved-screen.png` — the approved mockup screenshot to converge toward
+- `approved-screen.png` — the approved mockup (from `ui-studio/frames/{screen-name}/approved.png`)
 
 **If arriving from `/blueprint`:** the blueprint directory path is already in context. Confirm the four required files exist and proceed.
 

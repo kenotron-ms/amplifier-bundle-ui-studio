@@ -44,7 +44,7 @@ Screen PNG path: {path_to_approved_screen}
 
 Generate the containment overlay, self-judge coverage until 100%, then extract the component spec, design tokens, and asset inventory.
 
-Write all outputs to blueprints/{screen-name}/""",
+Write all outputs to ui-studio/blueprints/{screen-name}/""",
   context_depth="recent",
   context_scope="conversation"
 )
@@ -54,7 +54,7 @@ You are the orchestrator in this mode — the agent does all the work. Wait for 
 
 ## Output Location
 
-All output files are written to `blueprints/{screen-name}/`:
+All output files are written to `ui-studio/blueprints/{screen-name}/`:
 
 | File | Purpose |
 |------|---------|
@@ -70,12 +70,12 @@ When the agent reports completion, present the results and suggest the next step
 ```
 Blueprint complete — component spec, tokens, and assets extracted.
 
-Files written to blueprints/{screen-name}/:
+Files written to ui-studio/blueprints/{screen-name}/:
 - component-spec.md ({N} components)
 - tokens.json
 - assets.md
 
-Type `/forge blueprints/{screen-name}/` to generate code.
+Type `/forge ui-studio/blueprints/{screen-name}/` to generate code.
 ```
 
 ## Announcement
@@ -87,5 +87,5 @@ When entering this mode, announce:
 
 **Done when:** Agent confirms 100% coverage and all three output files are written.
 
-**Golden path:** `/forge blueprints/{screen-name}/`
-- Tell user: "Blueprint complete — component spec, tokens, and assets extracted. Type `/forge blueprints/{screen-name}/` to generate code."
+**Golden path:** `/forge ui-studio/blueprints/{screen-name}/`
+- Tell user: "Blueprint complete — component spec, tokens, and assets extracted. Type `/forge ui-studio/blueprints/{screen-name}/` to generate code."

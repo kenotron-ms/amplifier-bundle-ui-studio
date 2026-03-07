@@ -60,7 +60,7 @@ Using the approved screen PNG, generate a containment overlay with nano-banana:
 amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path={approved_screen_path} \
-  output_path=blueprints/{screen-name}/containment-overlay.png \
+  output_path=ui-studio/blueprints/{screen-name}/containment-overlay.png \
   'prompt=TAKE THIS IMAGE and draw a CONTAINMENT OVERLAY on top of it.
 
 For EVERY visual element in the screen, draw:
@@ -86,7 +86,7 @@ Make labels bold with drop shadows for readability.' \
 
 **Critical:** `reference_image_path` must point to the approved screen PNG — this annotates the existing image, not generates a new one.
 
-**Output:** `blueprints/{screen-name}/containment-overlay.png`
+**Output:** `ui-studio/blueprints/{screen-name}/containment-overlay.png`
 
 ## Step 2: Self-Judgment Loop (Coverage Convergence)
 
@@ -129,7 +129,7 @@ Do not ask the user for confirmation. Do not present intermediate results for re
 
 ## Step 3: Component Spec Extraction
 
-From the completed containment overlay (100% coverage confirmed), write `blueprints/{screen-name}/component-spec.md`.
+From the completed containment overlay (100% coverage confirmed), write `ui-studio/blueprints/{screen-name}/component-spec.md`.
 
 ### Format
 
@@ -156,7 +156,7 @@ One section per component. Every component must include:
 
 ## Step 4: Token Extraction
 
-Extract all design tokens from the approved screen PNG (look at the ORIGINAL image, not the overlay). Write `blueprints/{screen-name}/tokens.json`.
+Extract all design tokens from the approved screen PNG (look at the ORIGINAL image, not the overlay). Write `ui-studio/blueprints/{screen-name}/tokens.json`.
 
 ### Token Categories
 
@@ -213,7 +213,7 @@ Use consistent, semantic names:
 
 ## Step 5: Asset Inventory
 
-Identify all non-text visual elements in the screen. Write `blueprints/{screen-name}/assets.md`.
+Identify all non-text visual elements in the screen. Write `ui-studio/blueprints/{screen-name}/assets.md`.
 
 ### Format
 
@@ -284,7 +284,7 @@ When the blueprint is complete, print the summary:
 ```
 Blueprint extraction complete for {screen-name}.
 
-Files written to blueprints/{screen-name}/:
+Files written to ui-studio/blueprints/{screen-name}/:
   - containment-overlay.png — visual proof of 100% pixel coverage
   - component-spec.md — {N} components extracted
   - tokens.json — {N} colors, {N} typography, {N} spacing, {N} border-radius tokens
