@@ -4,10 +4,16 @@ bundle:
   version: 1.0.0
   description: Composable design-to-code pipeline with four progressive modes
 
-# Add the nano-banana tool as a dependency
+# Tools
 tools:
   - module: tool-nano-banana
     source: git+https://github.com/kenotron-ms/amplifier-module-tool-nano-banana@main
+
+  # Register this bundle's skills/ directory so load_skill() can find them
+  - module: tool-skills
+    config:
+      skills:
+        - "@ui-studio:skills"
 
 # Declare our specialist agents
 agents:
