@@ -11,6 +11,7 @@ mode:
       - load_skill
       - delegate
       - recipes
+      - nano-banana
       - write_file
       - edit_file
       - bash
