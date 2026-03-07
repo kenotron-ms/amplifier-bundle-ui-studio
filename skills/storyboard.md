@@ -385,10 +385,10 @@ This produces tighter iterations because the model starts from the existing layo
 
 ## Standard Output Location
 
-**Convention:** Storyboard artifacts go in `.amplifier/storyboard/`
+**Convention:** Storyboard artifacts go in `ui-studio/storyboards/`
 
 ```
-.amplifier/storyboard/
+ui-studio/storyboards/
   storyboard_v1.png        # First generation
   storyboard_v2.png        # After refinement
   storyboard_final.png     # Approved version

@@ -103,7 +103,7 @@ OUTPUT LAYOUT:
 
 Ensure the output directory exists first:
 ```bash
-mkdir -p .amplifier/storyboard
+mkdir -p ui-studio/storyboards
 ```
 
 ### Refinement Generations (v2, v3, ...)
