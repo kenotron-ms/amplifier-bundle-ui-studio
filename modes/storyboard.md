@@ -2,12 +2,20 @@
 mode:
   name: storyboard
   description: Generate a consistent multi-screen UX flow from an app brief
-  tool_policies:
-    default_action: safe
-    tools:
-      write_file: warn
-      edit_file: warn
-      bash: warn
+  shortcut: storyboard
+  tools:
+    safe:
+      - read_file
+      - glob
+      - grep
+      - load_skill
+      - delegate
+      - recipes
+    warn:
+      - write_file
+      - edit_file
+      - bash
+  default_action: block
 ---
 
 STORYBOARD MODE: Generate a complete multi-screen UX flow from an app brief, then iterate on human feedback until the flow is approved. All screens are generated simultaneously in a single nano-banana call to enforce visual consistency across the entire user journey. The loop is: gather brief → generate → present → human reacts → refine → repeat until approved.

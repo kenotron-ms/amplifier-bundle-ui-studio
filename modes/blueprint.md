@@ -2,12 +2,19 @@
 mode:
   name: blueprint
   description: Extract the component spec from an approved screen — every pixel must belong to a component
-  tool_policies:
-    default_action: safe
-    tools:
-      write_file: safe
-      edit_file: safe
-      bash: safe
+  shortcut: blueprint
+  tools:
+    safe:
+      - read_file
+      - glob
+      - grep
+      - load_skill
+      - delegate
+      - recipes
+      - write_file
+      - edit_file
+      - bash
+  default_action: block
 ---
 
 BLUEPRINT MODE: Fully automated component spec extraction from an approved screen.

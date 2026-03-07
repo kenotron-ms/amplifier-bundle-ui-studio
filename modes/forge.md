@@ -2,8 +2,20 @@
 mode:
   name: forge
   description: Converge code to match the mockup through an automated screenshot comparison loop
-  tool_policies:
-    default_action: safe
+  shortcut: forge
+  tools:
+    safe:
+      - read_file
+      - glob
+      - grep
+      - load_skill
+      - delegate
+      - recipes
+      - write_file
+      - edit_file
+      - bash
+      - apply_patch
+  default_action: block
 ---
 
 FORGE MODE: Automated visual convergence. The agent does the work — you watch it converge.

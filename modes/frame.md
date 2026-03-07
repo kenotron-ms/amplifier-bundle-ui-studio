@@ -2,12 +2,20 @@
 mode:
   name: frame
   description: Refine an individual screen from the storyboard to a pixel-level design
-  tool_policies:
-    default_action: safe
-    tools:
-      write_file: warn
-      edit_file: warn
-      bash: warn
+  shortcut: frame
+  tools:
+    safe:
+      - read_file
+      - glob
+      - grep
+      - load_skill
+      - delegate
+      - recipes
+    warn:
+      - write_file
+      - edit_file
+      - bash
+  default_action: block
 ---
 
 FRAME MODE: Converge on one screen at a time — generate, present, get human taste feedback, refine with contradiction detection, repeat until approved.
