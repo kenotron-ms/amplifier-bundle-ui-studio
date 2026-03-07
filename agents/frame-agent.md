@@ -61,25 +61,62 @@ You have access to:
 
 ### Phase 1: Initial Generation
 
-Generate the screen design using nano-banana:
+> **How `reference_image_path` works:** This parameter reads the image from disk and sends it as an `inline_data` image block alongside your text prompt in the multimodal call to Gemini. The model **sees** the image — it is visual input, not a text description. Always use `reference_image_path` when you want nano-banana to generate something *based on*, *similar to*, or *derived from* an existing image. Without it, Gemini has only your text.
 
-- **If storyboard is available:** Use the storyboard image as `reference_image_path` to maintain visual consistency with the overall design language
-- **If no storyboard:** Generate from the screen description provided
-
-**Focus on all visible elements:**
-- Layout structure and spatial relationships
-- Spacing — padding, margins, gaps between elements
-- Typography — sizes, weights, hierarchy
-- Color palette — backgrounds, text colors, accents
-- All interactive elements — buttons, inputs, navigation
-- Content placeholders — realistic sample content
-
-**Save the initial version:**
 ```bash
 mkdir -p ui-studio/frames/{screen-name}
 ```
+
+**If storyboard is available** — pass it as `reference_image_path` so Gemini sees the full flow and maintains visual consistency:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path=ui-studio/storyboards/storyboard-final.png \
+  output_path=ui-studio/frames/{screen-name}/v1.png \
+  'prompt=You can SEE the full multi-screen storyboard in the reference image above.
+
+Generate a detailed, pixel-level screen design for the "{screen-name}" screen.
+
+Extract from the storyboard:
+- The visual style, color palette, and typography established across all screens
+- The layout structure shown for this screen specifically
+- Navigation elements and how they connect to other screens
+
+Refine to pixel level:
+- Precise spacing — padding, margins, gaps
+- Full typography hierarchy — sizes, weights, line heights
+- All interactive elements — buttons, inputs, icons, navigation
+- Realistic placeholder content
+- All backgrounds and decorative elements
+
+Aspect ratio: 9:19.5 (mobile portrait). This is ONE screen, not the full flow.' \
+  aspect_ratio=9:19.5 \
+  resolution=2K \
+  use_thinking=true \
+  number_of_images=1
 ```
-ui-studio/frames/{screen-name}/v1.png
+
+**If no storyboard** — generate from description alone:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  output_path=ui-studio/frames/{screen-name}/v1.png \
+  'prompt=Generate a detailed, pixel-level screen design for: {screen description}
+
+Include:
+- Precise spacing — padding, margins, gaps
+- Full typography hierarchy — sizes, weights, line heights
+- All interactive elements — buttons, inputs, icons, navigation
+- Realistic placeholder content
+- All backgrounds and decorative elements
+
+Aspect ratio: 9:19.5 (mobile portrait).' \
+  aspect_ratio=9:19.5 \
+  resolution=2K \
+  use_thinking=true \
+  number_of_images=1
 ```
 
 Increment the version number for each iteration: `v1`, `v2`, `v3`, etc.

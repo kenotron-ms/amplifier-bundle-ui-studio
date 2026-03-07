@@ -362,13 +362,13 @@ Keep everything else identical so the model produces a minimal diff, not a compl
 
 ### Use the reference image for refinement
 
-After the first generation, subsequent iterations can use `reference_image_path` to hand the previous storyboard to nano-banana as a starting point:
+After the first generation, subsequent iterations pass the previous storyboard as `reference_image_path`. This sends the image as an **inline image block** in the multimodal call — Gemini literally sees your previous storyboard and applies targeted changes to it, rather than generating from scratch. This produces tight diffs instead of full regenerations.
 
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  reference_image_path=storyboard_v1.png \
-  output_path=storyboard_v2.png \
+  reference_image_path=ui-studio/storyboards/storyboard_v1.png \
+  output_path=ui-studio/storyboards/storyboard_v2.png \
   'prompt=TAKE THIS STORYBOARD and make these changes:
   - Add a 6th screen: Onboarding (shown before Home for new users)
   - Make the cards larger on the Home screen
