@@ -13,7 +13,7 @@ tools:
   - module: tool-skills
     config:
       skills:
-        - "@ui-studio:skills"
+        - "git+https://github.com/kenotron-ms/amplifier-bundle-ui-studio@main#subdirectory=skills"
 
 # Declare our specialist agents
 agents:
