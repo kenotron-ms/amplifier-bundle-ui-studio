@@ -192,15 +192,15 @@ Deterministic selection based on target — no decision-making:
 
 | Target | Router | State Management |
 |--------|--------|-----------------|
-| `react` | React Router v6 via `esm.sh` | Zustand v5 via `esm.sh` |
-| `svelte` | Custom 20-line hash router | Built-in `writable` stores |
-| `electron` | React Router v6 (HashRouter) | Zustand v5 |
-| `tauri` | React Router v6 (HashRouter) | Zustand v5 |
-| `flutter` | GoRouter v14+ (`go_router`) | ChangeNotifier + Provider v6 |
+| `react` | React Router v7 via `esm.sh` | Zustand v5 via `esm.sh` |
+| `svelte` | SvelteKit 2 file-based routing | Built-in `writable` stores (Svelte 5 runes) |
+| `electron` | React Router v7 (HashRouter) | Zustand v5 |
+| `tauri` | React Router v7 (HashRouter) | Zustand v5 |
+| `flutter` | go_router ^17.1.0 | ChangeNotifier + Provider v6 |
 
-**Why Zustand over Valtio:** Zustand (1KB) has a simpler mental model — one `create()` call, one `useStore()` hook. No Proxy magic. Sufficient for overlay state + cross-route state.
+**Why Zustand over Valtio:** Zustand (1KB, 57k stars) has a more predictable model for generated code — explicit `create`/`set` patterns are safer to emit than Valtio's mutable proxy model. Zustand v5 requires the named `{ create }` import (default export was removed in v5).
 
-**Why custom hash router for Svelte:** For CDN Svelte, `window.onhashchange` + reactive `{#if}` blocks is 20 lines. No dependency needed.
+**Why SvelteKit for Svelte:** Bare Svelte has no blessed routing solution in 2026 — the Svelte team recommends SvelteKit for any routed app. Use SPA mode (`adapter-static` + `ssr: false`) for a pure client-side output with no server requirement. Scaffold with `npx sv create`.
 
 ### Store shape (same semantics across all targets)
 
@@ -289,13 +289,13 @@ Build the complete routing skeleton — every route navigable, every overlay wir
 
 ### Output directory structure
 
-**Web targets:**
+**React / Electron / Tauri:**
 ```
 ui-studio/forge/{target}/
-  index.html          ← entry point with import map + CDN links
+  index.html          ← entry point with import map (react-router@7, zustand@5)
   App.jsx             ← root component: router + persistent nav + overlay layer
   tokens.css          ← rationalized design tokens
-  store.js            ← state management
+  store.js            ← Zustand store
   routes/
     home/
       HomeScreen.jsx         ← stub: "{ScreenName} (placeholder)"
@@ -307,10 +307,38 @@ ui-studio/forge/{target}/
   .forge-progress.json
 ```
 
+**SvelteKit (svelte target):**
+```
+ui-studio/forge/svelte/
+  package.json          ← sv create output (SvelteKit + adapter-static)
+  svelte.config.js      ← adapter-static, ssr: false
+  vite.config.js
+  src/
+    app.html
+    lib/
+      tokens.css        ← rationalized design tokens
+      store.js          ← writable stores
+    routes/
+      +layout.svelte    ← persistent tab nav + overlay layer
+      home/
+        +page.svelte    ← stub
+      article-detail/
+        +page.svelte
+      settings/
+        +page.svelte
+        ConfirmDelete.svelte  ← overlay
+  _convergence/         ← screenshots (outside src/)
+    home/
+    settings/
+  .forge-progress.json
+```
+
+Scaffold with: `npx sv create ui-studio/forge/svelte --template minimal --types none --no-install`
+
 **Flutter:**
 ```
 ui-studio/forge/flutter/
-  pubspec.yaml
+  pubspec.yaml          ← go_router: ^17.1.0, provider: ^6.0.0
   lib/
     main.dart           ← MaterialApp.router() entry
     theme.dart          ← rationalized tokens
@@ -334,15 +362,16 @@ ui-studio/forge/flutter/
   "imports": {
     "react":            "https://esm.sh/react@19",
     "react-dom/client": "https://esm.sh/react-dom@19/client",
-    "react-router-dom": "https://esm.sh/react-router-dom@6",
-    "zustand":          "https://esm.sh/zustand@5",
-    "zustand/shallow":  "https://esm.sh/zustand@5/shallow"
+    "react-router":     "https://esm.sh/react-router@7?deps=react@19",
+    "zustand":          "https://esm.sh/zustand@5?deps=react@19"
   }
 }
 </script>
 <link rel="stylesheet" href="https://cdn.tailwindcss.com">
 <link rel="stylesheet" href="tokens.css">
 ```
+
+React Router v7 ships as a single `react-router` package — `react-router-dom` is now just a re-export. The `?deps=react@19` pin on esm.sh prevents a duplicate React instance which breaks hooks.
 
 Use `HashRouter` for Electron/Tauri (no server); `BrowserRouter` works for `react` served locally.
 
