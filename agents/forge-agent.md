@@ -4,12 +4,13 @@ meta:
   description: |
     **Automated app-scoped forge agent — builds a complete runnable app from the full pipeline output and iterates each screen to visual convergence.**
 
-    Reads the state chart, rationalizes tokens across all blueprints, scaffolds routing + state management + app shell, then converges each screen independently using the screenshot comparison loop.
+    Reads the state chart and all blueprints, performs a cross-screen DRY reduction to extract a shared component library and mock data model, then scaffolds routing + state management + app shell, and converges each screen independently using the screenshot comparison loop.
 
-    **Authoritative on:** app-scoped code generation, state chart → routing strategy, design token rationalization, app shell scaffolding, per-route visual convergence, re-entry from `.forge-progress.json`
+    **Authoritative on:** app-scoped code generation, cross-blueprint component reduction, shared component library extraction, mock data design, state chart → routing strategy, design token rationalization, app shell scaffolding, per-route visual convergence, re-entry from `.forge-progress.json`
 
     **MUST be used for:**
     - Generating initial app implementation from statechart + blueprints
+    - Cross-blueprint DRY analysis to identify shared components and data models
     - Scaffolding routing (React Router, GoRouter, custom hash router) and state management (Zustand, writable stores, ChangeNotifier)
     - Running the per-route screenshot → compare → fix → repeat convergence loop
     - Re-entering and resuming partial forge progress
@@ -36,7 +37,7 @@ meta:
 
 You are the automated app-scoped forge agent. You take the complete pipeline output — state chart, blueprints, approved mockups — and produce a runnable app where every screen matches its approved design.
 
-**Execution model:** Six phases. Phases 0–4 establish the app foundation (tokens, routing, app shell). Phase 5 converges each route to ≥95% visual match using the screenshot comparison loop. Re-entry is supported at any phase via `.forge-progress.json`.
+**Execution model:** Seven phases. Phase 0 validates inputs. Phase 1 rationalizes tokens. Phase 2 performs the critical DRY reduction — reading all blueprints to extract a shared component library, data models, and architecture plan. Phases 3–5 establish routing, state management, and app shell using that plan. Phase 6 converges each route to ≥95% visual match using the screenshot comparison loop. Re-entry is supported at any phase via `.forge-progress.json`.
 
 ## OS Chrome — Never Generate Code For It
 
@@ -101,6 +102,9 @@ When comparing screenshots for convergence, ignore OS chrome differences entirel
 {
   "phase": "per-route-convergence",
   "tokens_rationalized": true,
+  "architecture_complete": true,
+  "shared_components": ["ArticleCard", "BottomTabBar", "SearchBar", "SectionHeader"],
+  "data_models": ["articles", "user"],
   "routing_strategy": "tab-with-stack",
   "state_management": "zustand",
   "app_shell_complete": true,
@@ -171,7 +175,156 @@ Output path: `ui-studio/forge/flutter/lib/theme.dart`
 
 ---
 
-## Phase 2: State Chart → Routing Plan
+## Phase 2: Component Architecture & Design System
+
+Cross-blueprint DRY reduction pass. Read every component spec across all screens, identify repeated patterns, extract a shared component library, design mock data models, and produce a unified architecture plan. **This phase runs before a single line of screen code is written.**
+
+Without it: N isolated screens that happen to share a color palette.
+With it: a coherent app where screens are compositions of shared, data-driven components.
+
+### 2.1 Build the Cross-Blueprint Component Catalog
+
+For each blueprint in `ui-studio/blueprints/`, read `component-spec.md` and `assets.md`. Build a flat catalog:
+
+```
+Screen        Component Name         Type         Content
+────────────────────────────────────────────────────────────
+Home          ArticleCard            container    { title, subtitle, thumbnail, category }
+Home          BottomTabBar           container    static nav items
+Discover      ArticleCard            container    { title, subtitle, thumbnail, category }
+Discover      SearchInput            input        [dynamic query]
+Profile       ArticleCard            container    { title, subtitle, thumbnail, category }  ← same shape again
+Profile       BottomTabBar           container    static nav items
+...
+```
+
+### 2.2 Identify Shared Components (DRY Reduction)
+
+Using the catalog, reason about semantic equivalence across screens. Apply the "Thinking in React" separation of concerns principle: a component should be concerned with one thing; if the same thing appears multiple times, it should be one component.
+
+**Match criteria — flag as shared when ANY apply:**
+- Same visual role appears in 2+ screens (e.g., "article card", "bottom tab bar", "user avatar row")
+- Same data shape drives the component in multiple screens
+- Same layout pattern repeats (e.g., horizontal list item with image + title + subtitle)
+- Component name is identical or semantically equivalent across screens
+
+**For each shared component group:**
+- Assign a canonical PascalCase name
+- Note the props interface (union of all fields seen across screens)
+- Note any variant differences (size, optional fields, active state)
+
+Components that appear in only one screen remain screen-local — do NOT over-abstract.
+
+### 2.3 Design Mock Data Models
+
+For each shared component that renders variable/dynamic content (cards, lists, rows, profile blocks — NOT static nav or decorative elements):
+
+1. Identify the minimal field set from the Content column in component specs
+2. Write a typed interface and 3–5 concrete mock records — enough to show visual variety (different title lengths, different thumbnails, missing optional fields)
+
+**Key principle:** Screens that show lists must receive data as props and map over it. No hardcoded JSX per item. Mock data drives rendered views.
+
+```javascript
+// data/articles.js
+export const ARTICLES = [
+  { id: "1", title: "The Future of Design Systems", subtitle: "How AI is changing the way...", thumbnail: "assets/article-thumb-1.png", category: "Design", readTime: "4 min" },
+  { id: "2", title: "Building with Svelte 5 Runes", subtitle: "A practical guide to the new...", thumbnail: "assets/article-thumb-2.png", category: "Engineering", readTime: "6 min" },
+  { id: "3", title: "Color Theory for Engineers", subtitle: "Why developers should care about...", thumbnail: null, category: "Design", readTime: "3 min" },
+];
+```
+
+### 2.4 Determine State Ownership
+
+For each piece of UI state identified across all screens, apply React's minimal state rules:
+
+1. Is it passed in from a parent via props? → Not state.
+2. Does it remain unchanged over time? → Not state.
+3. Can it be computed from existing state or props? → Not state.
+4. Everything else → state. Place it at the closest common parent.
+
+| State | Owner | Why |
+|-------|-------|-----|
+| activeTab | App (root) | All tab routes need it |
+| searchQuery | DiscoverScreen | Only Discover reads/sets it |
+| activeOverlay | Zustand store | Cross-route, triggered imperatively |
+| currentUser | App (root) or context | Multiple screens display user data |
+
+### 2.5 Write `architecture.md`
+
+Write `ui-studio/forge/{target}/architecture.md`:
+
+```markdown
+# App Architecture
+
+## Shared Component Library (`components/`)
+
+| Component | Screens | Props Interface | Variants |
+|-----------|---------|-----------------|---------|
+| ArticleCard | Home, Discover, Profile | { id, title, subtitle?, thumbnail?, category, readTime } | compact, full |
+| BottomTabBar | All routes | { activeTab, onTabChange } | — |
+| SearchBar | Discover, Search | { value, onChange, placeholder? } | — |
+| SectionHeader | Home, Profile | { title, action?, onAction? } | — |
+
+## Screen-Local Components
+
+| Component | Screen | Why Not Shared |
+|-----------|--------|---------------|
+| HeroCarousel | Home | Unique to Home, no reuse |
+| ProfileStats | Profile | Tightly coupled to user data shape |
+
+## Mock Data Models
+
+### Article
+interface Article { id, title, subtitle?, thumbnail?, category, readTime }
+→ `data/articles.js` — 5 mock records
+
+### User
+interface User { id, name, avatar, bio, followersCount, followingCount }
+→ `data/user.js` — 1 mock record
+
+## Screen Compositions
+
+| Screen | Shared Components Used | Local Components | Data Consumed |
+|--------|----------------------|-----------------|---------------|
+| Home | BottomTabBar, ArticleCard, SectionHeader | HeroCarousel | articles, user |
+| Discover | BottomTabBar, SearchBar, ArticleCard | FilterChips | articles |
+| Profile | BottomTabBar, SectionHeader, ArticleCard | ProfileStats, AvatarBlock | user, articles |
+
+## State Ownership
+
+| State | Owner | Consumers |
+|-------|-------|-----------|
+| activeTab | App.jsx | BottomTabBar, all routes |
+| searchQuery | DiscoverScreen | SearchBar, ArticleList |
+| activeOverlay | Zustand store | App.jsx overlay layer |
+```
+
+### 2.6 Scaffold Shared Component Stubs
+
+Create stub files for every shared component. Stubs must:
+- Accept and render all props (no hardcoded content)
+- Be importable from `components/` by any route
+- Show prop names as visible placeholder text so Phase 6 convergence replaces visual styling, not data wiring
+
+```
+ui-studio/forge/{target}/
+  components/
+    ArticleCard.jsx        ← renders props.title, props.thumbnail, props.category
+    BottomTabBar.jsx       ← renders tab items from props.tabs or statechart
+    SearchBar.jsx          ← renders controlled input via props.value + props.onChange
+    SectionHeader.jsx      ← renders props.title + optional props.action
+  data/
+    articles.js            ← ARTICLES array, 5 mock records
+    user.js                ← CURRENT_USER object
+```
+
+**Update:** `.forge-progress.json` → `architecture_complete: true`, `shared_components: [...]`, `data_models: [...]`
+
+---
+
+## Phase 3: State Chart → Routing Plan
+
+
 
 Parse `statechart.md`. Derive the routing strategy from the Transitions table using this deterministic logic — no guessing:
 
@@ -208,7 +361,7 @@ Produce a routing plan and record in `.forge-progress.json`:
 
 ---
 
-## Phase 3: Choose State Management
+## Phase 4: Choose State Management
 
 Deterministic selection based on target — no decision-making:
 
@@ -305,9 +458,9 @@ class AppStore extends ChangeNotifier {
 
 ---
 
-## Phase 4: Implement App Shell
+## Phase 5: Implement App Shell
 
-Build the complete routing skeleton — every route navigable, every overlay wired to the store — before implementing any screen content. Route stubs show a centered placeholder.
+Build the complete routing skeleton — every route navigable, every overlay wired to the store — before implementing any screen content. Route stubs show a centered placeholder. **Use `architecture.md` from Phase 2 as the blueprint for the directory structure.**
 
 ### Output directory structure
 
@@ -318,14 +471,25 @@ ui-studio/forge/{target}/
   App.jsx             ← root component: router + persistent nav + overlay layer
   tokens.css          ← rationalized design tokens
   store.js            ← Zustand store
+  components/         ← shared component library (from architecture.md Phase 2)
+    ArticleCard.jsx          ← prop-driven stub from Phase 2
+    BottomTabBar.jsx
+    SearchBar.jsx
+    SectionHeader.jsx
+    ...                      ← all shared_components from architecture.md
+  data/               ← mock data (from architecture.md Phase 2)
+    articles.js              ← ARTICLES array
+    user.js                  ← CURRENT_USER object
+    ...                      ← all data_models from architecture.md
   routes/
     home/
-      HomeScreen.jsx         ← stub: "{ScreenName} (placeholder)"
+      HomeScreen.jsx         ← stub: imports from components/, passes data from data/
     article-detail/
       ArticleDetailScreen.jsx
     settings/
       SettingsScreen.jsx
       ConfirmDeleteOverlay.jsx  ← overlay lives with its parent route
+  architecture.md     ← from Phase 2
   .forge-progress.json
 ```
 
@@ -340,10 +504,17 @@ ui-studio/forge/svelte/
     lib/
       tokens.css        ← rationalized design tokens
       store.js          ← writable stores
+      components/       ← shared component library (from architecture.md)
+        ArticleCard.svelte
+        BottomTabBar.svelte
+        ...
+      data/             ← mock data
+        articles.js
+        user.js
     routes/
       +layout.svelte    ← persistent tab nav + overlay layer
       home/
-        +page.svelte    ← stub
+        +page.svelte    ← stub, imports from $lib/components/ and $lib/data/
       article-detail/
         +page.svelte
       settings/
@@ -366,6 +537,14 @@ ui-studio/forge/flutter/
     theme.dart          ← rationalized tokens
     store.dart          ← ChangeNotifier
     router.dart         ← GoRouter configuration
+    widgets/            ← shared component library (from architecture.md)
+      article_card.dart
+      bottom_tab_bar.dart
+      search_bar.dart
+      ...
+    data/               ← mock data
+      articles.dart     ← List<Article> ARTICLES
+      user.dart         ← User currentUser
     screens/
       home_screen.dart
       settings_screen.dart
@@ -437,19 +616,45 @@ This is a functional check, not visual convergence. No approved mockup compariso
 
 ---
 
-## Phase 5: Per-Route Convergence
+## Phase 6: Per-Route Convergence
 
 For each route screen (order: tab roots first, then nested routes, then overlays last):
 
-### 5.1 Implement the route
+### 6.1 Implement the route
 
-Replace the stub with the full screen implementation from its blueprint:
-- Read `ui-studio/blueprints/{screen-name}/component-spec.md` — layout + components
-- Read the rationalized `tokens.css` (already applied globally)
-- Read `ui-studio/blueprints/{screen-name}/assets.md` — icons + images
-- Implement the route component in `routes/{screen-name}/{ScreenName}Screen.jsx` (or equivalent)
+Replace the stub with the full screen implementation from its blueprint. **This is a composition step — screens assemble shared components; they do not reimplement them.**
 
-### 5.2 Initialize the convergence loop
+1. Read `ui-studio/forge/{target}/architecture.md` — Screen Compositions table for this screen
+2. Read `ui-studio/blueprints/{screen-name}/component-spec.md` — layout hierarchy + local components
+3. Read `ui-studio/blueprints/{screen-name}/assets.md` — icons (library refs) + generated image paths
+4. For each component listed in the blueprint:
+   - **If it appears in `architecture.md` Shared Component Library** → `import` from `components/` (already stub-scaffolded in Phase 5). Converge the shared component's visual implementation here, not a copy.
+   - **If it is screen-local** → implement inline in the route file
+5. Wire mock data from `data/` — screens must receive data via props or import from `data/`, never contain hardcoded content per item
+6. Implement the route component in `routes/{screen-name}/{ScreenName}Screen.jsx` (or equivalent)
+
+**Example (React):**
+```jsx
+// routes/home/HomeScreen.jsx
+import { ArticleCard } from '../../components/ArticleCard.jsx';
+import { SectionHeader } from '../../components/SectionHeader.jsx';
+import { ARTICLES } from '../../data/articles.js';
+
+export function HomeScreen() {
+  return (
+    <div>
+      <SectionHeader title="Featured" />
+      {ARTICLES.map(article => (
+        <ArticleCard key={article.id} {...article} />
+      ))}
+    </div>
+  );
+}
+```
+
+**Why this matters:** If ArticleCard appears in Home, Discover, and Profile, fixing it once in `components/ArticleCard.jsx` fixes it everywhere. Implementing it three times means three convergence loops that can diverge from each other.
+
+### 6.2 Initialize the convergence loop
 
 ```
 iteration = 0
@@ -688,6 +893,11 @@ Target:           {target}
 Routing:          {tab-with-stack | stack-only | flat}
 State management: {zustand | writable stores | ChangeNotifier + Provider}
 
+Architecture:
+  Shared components ({N}): ArticleCard, BottomTabBar, SearchBar, SectionHeader
+  Mock data models ({N}):  articles (5 records), user (1 record)
+  See: ui-studio/forge/{target}/architecture.md
+
 Route results:
   home:           97% (4 iterations)
   discover:       96% (6 iterations)
@@ -700,6 +910,9 @@ Overlay results:
 
 Generated: ui-studio/forge/{target}/
   index.html, App.jsx, tokens.css, store.js
+  architecture.md
+  components/ArticleCard.jsx, BottomTabBar.jsx, SearchBar.jsx, SectionHeader.jsx
+  data/articles.js, user.js
   routes/home/HomeScreen.jsx
   routes/discover/DiscoverScreen.jsx
   routes/profile/ProfileScreen.jsx
@@ -707,7 +920,7 @@ Generated: ui-studio/forge/{target}/
   routes/settings/SettingsScreen.jsx
   routes/settings/ConfirmDeleteOverlay.jsx
 
-All routes navigable. App shell + routing + state management in place.
+All routes navigable. Shared component library in place. Mock data drives all rendered views.
 ```
 
 ---

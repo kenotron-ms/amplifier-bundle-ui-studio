@@ -342,20 +342,21 @@ Identify all non-text visual elements in the screen. Write `ui-studio/blueprints
 
 ## Images
 
-| Name | Type | Dimensions | Aspect Ratio | Content Description |
-|------|------|------------|--------------|---------------------|
-| hero-bg | background | 390x220 | 16:9 | Gradient sunset landscape |
-| article-thumb-1 | thumbnail | 80x80 | 1:1 | Food photography |
+| Name | Type | Dimensions | Aspect Ratio | Content Description | File |
+|------|------|------------|--------------|---------------------|------|
+| hero-bg | background | 390x220 | 16:9 | Gradient sunset landscape | assets/hero-bg.png |
+| article-thumb-1 | thumbnail | 80x80 | 1:1 | Food photography, warm tones | assets/article-thumb-1.png |
 
 ## Backgrounds
 
-| Name | Type | Value |
-|------|------|-------|
-| screen-bg | solid | #F3EFE7 |
-| card-gradient | gradient | linear-gradient(180deg, #000000 0%, transparent 100%) |
+| Name | Type | Value | File |
+|------|------|-------|------|
+| screen-bg | solid | #F3EFE7 | — |
+| card-gradient | gradient | linear-gradient(180deg, #000000 0%, transparent 100%) | — |
+| hero-image | image | see assets/ | assets/hero-image.png |
 ```
 
-### Process
+### Phase 5a: Catalog
 
 **For icons:**
 1. Load the `icon-finding` skill (already loaded in Step 0)
@@ -371,8 +372,47 @@ Identify all non-text visual elements in the screen. Write `ui-studio/blueprints
 
 **For backgrounds:**
 1. Identify solid colors, gradients, and background images
-2. Record exact values (hex codes, gradient definitions)
+2. Record exact CSS values (hex codes, gradient definitions) for solid/gradient backgrounds — these need no file
 3. Note which component each background belongs to
+4. Flag any photographic or illustrative backgrounds for asset generation (Phase 5b)
+
+### Phase 5b: Asset Generation
+
+For every image and non-CSS background identified in Phase 5a, generate a standalone asset file. These are visual elements that cannot be expressed as CSS values — photos, illustrations, textured backgrounds, complex hero images.
+
+**Do NOT generate assets for:**
+- Solid color backgrounds (`#hex`) — express as CSS
+- CSS gradients (`linear-gradient(...)`) — express as CSS
+- Icons — handled by icon libraries (Phase 5a)
+
+**For each image/background asset to generate:**
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path={approved_screen_path} \
+  output_path=ui-studio/blueprints/{screen-name}/assets/{asset-name}.png \
+  'prompt=Extract and recreate the {asset-name} image asset from this screen.
+
+TARGET ASSET: {describe the specific visual element — its location in the screen, content, style}
+
+STYLE REFERENCE: Use the approved screen as the definitive visual reference.
+Reproduce the asset faithfully: same color palette, same mood, same composition.
+If the asset is partially obscured by UI overlays, infer the complete image from what is visible.
+
+OUTPUT: The asset only — no UI chrome, no overlays, no labels, no component borders.
+Clean image at {width}x{height}px. Transparent background where appropriate.' \
+  number_of_images=1
+```
+
+**Key principles:**
+- The approved screen PNG is your reference — use `reference_image_path` so nano-banana can see the original visual
+- If a frame image is visible in the screenshot, it can also be used as `reference_image_path` for richer context
+- Generate assets at 2× the display dimensions for retina quality
+- Save all generated assets to `ui-studio/blueprints/{screen-name}/assets/`
+- Update the `File` column in `assets.md` with the generated path for each asset
+
+**After generation, update `assets.md`** with the file path for each generated asset so forge can locate them directly.
 
 ## Step 6: Completion Judgment
 
