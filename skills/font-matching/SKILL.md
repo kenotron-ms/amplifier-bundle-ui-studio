@@ -1,11 +1,8 @@
 ---
-skill:
-  name: font-matching
-  version: 1.0.0
-  description: Systematic Google Fonts search using VLM validation across 1,600+ font families
-  keywords: [fonts, typography, google-fonts, vlm, mockup, design-tokens]
-  author: Ken
-  license: MIT
+name: font-matching
+description: Use when identifying typography from a mockup — systematic Google Fonts search using VLM visual ranking across 1,600+ font families to find the closest production-ready match
+version: 1.0.0
+license: MIT
 ---
 
 # Font Matching Skill: VLM-Guided Google Fonts Selection

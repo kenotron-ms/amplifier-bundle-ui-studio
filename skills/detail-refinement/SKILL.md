@@ -1,11 +1,8 @@
 ---
-skill:
-  name: detail-refinement
-  version: 1.0.0
-  description: Fine-tuning with verification loops and contradiction detection. Prevents going backwards through VLM validation.
-  keywords: [refinement, validation, vlm, contradiction-detection, verification]
-  author: Ken
-  license: MIT
+name: detail-refinement
+description: Use when fine-tuning implementation against a mockup — applies verification loops and contradiction detection to prevent going backwards through blind VLM suggestion application
+version: 1.0.0
+license: MIT
 ---
 
 # Detail Refinement: VLM Verification with Contradiction Detection
@@ -224,40 +221,40 @@ VLM original measurement: "Hero has less margin (is wider)"
 ## The Complete Verification Workflow
 
 ```
-┌─────────────────────────────────────────────┐
-│ VLM Detail Checklist (Comparison)           │
-│ → Flags N potential issues                  │
-└────────────────┬────────────────────────────┘
-                 ▼
-┌─────────────────────────────────────────────┐
-│ Verification Loop (For each issue):         │
-│                                              │
-│ 1. VLM looks at ORIGINAL ONLY               │
-│    → What is ground truth?                  │
-│                                              │
-│ 2. Compare with checklist suggestion        │
-│    → Match or contradiction?                │
-│                                              │
-│ 3. If MATCH: Apply fix                      │
-│    If CONTRADICTION: Flag for human         │
-└────────────────┬────────────────────────────┘
-                 ▼
-┌─────────────────────────────────────────────┐
-│ Human Approval (For contradictions only)    │
-│                                              │
-│ Present:                                     │
-│ - What checklist suggests                   │
-│ - What original shows                       │
-│ - What current has                          │
-│                                              │
-│ User decides: Apply, Skip, or Third Option  │
-└────────────────┬────────────────────────────┘
-                 ▼
-┌─────────────────────────────────────────────┐
-│ Apply Approved Changes                      │
-│ → Re-validate                               │
-│ → Iterate                                   │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ VLM Detail Checklist (Comparison)                           │
+│ → Flags N potential issues                                  │
+└────────────────────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Verification Loop (For each issue):                         │
+│                                                             │
+│ 1. VLM looks at ORIGINAL ONLY                               │
+│    → What is ground truth?                                  │
+│                                                             │
+│ 2. Compare with checklist suggestion                        │
+│    → Match or contradiction?                                │
+│                                                             │
+│ 3. If MATCH: Apply fix                                      │
+│    If CONTRADICTION: Flag for human                         │
+└─────────────────────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Human Approval (For contradictions only)                    │
+│                                                             │
+│ Present:                                                    │
+│ - What checklist suggests                                   │
+│ - What original shows                                       │
+│ - What current has                                          │
+│                                                             │
+│ User decides: Apply, Skip, or Third Option                  │
+└─────────────────────────────────────────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Apply Approved Changes                                      │
+│ → Re-validate                                               │
+│ → Iterate                                                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---

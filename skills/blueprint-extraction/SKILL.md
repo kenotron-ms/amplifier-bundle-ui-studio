@@ -1,11 +1,8 @@
 ---
-skill:
-  name: blueprint-extraction
-  version: 1.0.0
-  description: Use when extracting a component spec from an approved screen PNG — applies the containment model to ensure every pixel belongs to a component before the spec is considered complete
-  keywords: [blueprint, containment model, component spec, design tokens, asset inventory, nano-banana, overlay]
-  author: kenotron-ms
-  license: MIT
+name: blueprint-extraction
+description: Use when extracting a component spec from an approved screen PNG — applies the containment model to ensure every pixel belongs to a component before the spec is considered complete
+version: 1.0.0
+license: MIT
 ---
 
 # Blueprint Extraction: No Pixel Without a Container
@@ -102,14 +99,14 @@ The agent runs an autonomous loop. No human input is required.
 ### The Loop
 
 ```
-┌─────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────┐
 │  1. Generate containment overlay             │
 │  2. Analyze: "Any pixels NOT in a box?"      │
 │  3. If gaps → define new components           │
 │  4. Regenerate overlay with additions         │
 │  5. Repeat from step 2                        │
 │  6. Stop when: no uncovered pixels remain     │
-└─────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Step-by-Step

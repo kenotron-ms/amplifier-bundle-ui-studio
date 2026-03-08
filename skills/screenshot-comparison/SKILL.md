@@ -1,11 +1,8 @@
 ---
-skill:
-  name: screenshot-comparison
-  version: 1.0.0
-  description: Three-stage before/after screenshot comparison with visual annotations for implementation validation
-  keywords: [screenshot, comparison, validation, visual-diff, annotations, nano-banana]
-  author: Ken
-  license: MIT
+name: screenshot-comparison
+description: Use when validating implementation against a mockup — three-stage before/after comparison with visual overlay annotations to identify and prioritize visual differences
+version: 1.0.0
+license: MIT
 ---
 
 # Screenshot Comparison: Before & After Analysis
@@ -296,32 +293,6 @@ This skill fits into the validation workflow:
 - Iteration 3: 80% → Fix typography → 88%
 - Iteration 4: 88% → Fine-tune spacing → 94%
 
-### Automated Loop Recipe
-
-For automated convergence, use the `screenshot-comparison-loop` recipe:
-
-```bash
-amplifier tool invoke recipes operation=execute \
-  recipe_path=@ui-studio:recipes/screenshot-comparison-loop.yaml \
-  'context={
-    "original_mockup_path": "mockups/design.png",
-    "implementation_url": "http://localhost:5173",
-    "viewport_width": "390",
-    "viewport_height": "844",
-    "target_match_percentage": "95"
-  }'
-```
-
-The recipe runs this three-stage pattern in a loop:
-1. Captures screenshot
-2. Generates annotated comparison
-3. Analyzes and reports top priority fix
-4. **Pauses** for you to apply the fix
-5. Press ENTER to continue to next iteration
-6. Repeats until match ≥ target or max iterations
-
-See `@ui-studio:recipes/screenshot-comparison-loop.yaml` for full details.
-
 ---
 
 ## Critical Success Factors
@@ -451,7 +422,6 @@ This keeps your workspace clean while maintaining a complete audit trail.
 
 ## Related Skills
 
-- **vlm-iteration** - Complete iteration loop pattern with convergence tracking
 - **detail-refinement** - Fine-tuning after reaching 80% match
 - **font-matching** - Systematic font identification
 - **icon-finding** - Icon asset selection

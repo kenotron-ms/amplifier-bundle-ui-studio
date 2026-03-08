@@ -1,11 +1,8 @@
 ---
-skill:
-  name: storyboard
-  version: 1.0.0
-  description: Use when generating a multi-screen UX flow from an app brief using nano-banana — ensures visual consistency by generating all screens simultaneously in a single call
-  keywords: [storyboard, multi-screen, UX flow, consistency, nano-banana, simultaneous generation]
-  author: kenotron-ms
-  license: MIT
+name: storyboard
+description: Use when generating a multi-screen UX flow from an app brief using nano-banana — ensures visual consistency by generating all screens simultaneously in a single call
+version: 1.0.0
+license: MIT
 ---
 
 # Storyboard: Multi-Screen UX Flow Generation

@@ -1,11 +1,8 @@
 ---
-skill:
-  name: icon-finding
-  version: 1.0.0
-  description: VLM-guided icon selection with topology awareness. NEVER use emoji for UI icons.
-  keywords: [icons, svg, emoji, topology, nano-banana, mockup]
-  author: Ken
-  license: MIT
+name: icon-finding
+description: Use when selecting icons for UI mockup implementation — VLM-guided topology-aware selection from Lucide/Heroicons/Feather. NEVER use emoji for UI icons.
+version: 1.0.0
+license: MIT
 ---
 
 # Icon Finding Skill: VLM-Guided Icon Selection
@@ -227,7 +224,7 @@ Check against established patterns:
    - MIT licensed
    - Available: 24x24 outline, 24x24 solid, 20x20 solid, 16x16 micro
 
-2. **Feather Icons** (https://feathericons..com/)
+2. **Feather Icons** (https://feathericons.com/)
    - Ultra-minimal stroke icons
    - Consistent 24x24 grid
    - MIT licensed
@@ -320,7 +317,7 @@ result = await generator.generate(
 ## When to Use Each Approach
 
 | Scenario | Approach | Reasoning |
-|----------|----------|-----------|
+|----------|----------|-----------| 
 | Standard UI icon with established meaning | **Library** first | Semantic meaning is critical |
 | Icon matches visually BUT wrong semantic meaning | **Keep searching** or **Generate** | Never compromise on semantics |
 | No semantic conflict, visual match found | **Use library** | Fast, professional, tiny |
