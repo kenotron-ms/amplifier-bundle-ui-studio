@@ -268,6 +268,12 @@ COLOR group: {hex values with filled swatches from Phase 1}
 BORDER RADIUS group: {radius values from Phase 1}
 SHADOWS (below UI if present): {shadow specs from Phase 1}
 
+[BOTTOM — Icons]
+ICONS group: For every icon visible in the screen, draw a callout line to it and annotate:
+- Visual description of the icon shape (mechanical, not conceptual — e.g. "magnifying glass", "house outline")
+- Size in px (e.g. 24x24)
+- Location/role (e.g. "nav-search", "header-back", "card-bookmark")
+
 OUTPUT: Wide format 1600x1000px, white background, UI centered,
 professional Figma-style handoff sheet aesthetic.' \
   resolution=2K \
