@@ -186,7 +186,7 @@ Once the containment model is complete, extract design tokens from the approved 
 - Format: hex codes (e.g., `#1A1A2E`)
 
 **Typography:**
-- Font families (identify via visual inspection or font-matching skill)
+- Font families (describe visually: serif/sans-serif, geometric/humanist, stroke contrast — do not guess names)
 - Font sizes in px for each distinct text style
 - Font weights (regular, medium, semibold, bold)
 - Line heights where distinguishable
@@ -203,32 +203,92 @@ Once the containment model is complete, extract design tokens from the approved 
 - Border width where visible (e.g., 1px, 2px)
 - Border color (reference color tokens)
 
-### Token Extraction Prompt
+### Token Extraction: 4-Phase Process
+
+Token extraction is a four-phase process: analyze → write tokens.json → generate spec overlay → verify.
+
+#### Phase 1: Raw Token Analysis
 
 ```bash
 amplifier tool invoke nano-banana \
   operation=analyze \
   image_path=approved-screen.png \
-  'prompt=Extract all design tokens from this screen design.
+  'prompt=Extract all design tokens from this screen. For each, provide exact values:
 
-For each visual property, provide exact values:
-
-COLORS: List every distinct color as hex codes. Name each by its role:
+COLORS: Every distinct color as hex. Name by role:
   color-primary, color-secondary, color-surface, color-background,
   color-text-primary, color-text-secondary, color-accent, color-border, etc.
 
-TYPOGRAPHY: List every distinct text style:
-  font-family, font-size (px), font-weight, line-height
-  Name each: heading-lg, heading-md, body, caption, label, etc.
+TYPOGRAPHY: Every distinct text style. Describe font-family visually
+  (serif/sans-serif, geometric/humanist, stroke contrast — do not guess names).
+  Include font-size (px), font-weight (400/500/600/700), line-height.
+  Name each style: heading-lg, heading-md, body, caption, label, etc.
 
 SPACING: Measure padding, margin, and gap values in px.
   Name each: spacing-xs, spacing-sm, spacing-md, spacing-lg, spacing-xl
 
-BORDERS: List border-radius, border-width, and border-color per component.
+BORDERS: Border-radius, border-width, and border-color per component.
   Name each: radius-sm, radius-md, radius-lg, radius-full
 
-Output as flat key-value JSON.'
+SHADOWS: Any drop shadows or elevation — offset, blur, spread, color.
+
+Output as structured JSON with all five categories.'
 ```
+
+#### Phase 2: Write tokens.json
+
+Save the extracted values as `tokens.json` (see [Token File Format](#token-file-format) above).
+
+#### Phase 3: Generate Token Spec Overlay
+
+Generate a professional redline/handoff sheet — the original screen centered, surrounded by callout annotations for every token. Populate the prompt with the **actual values from Phase 1**:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path=approved-screen.png \
+  output_path=blueprint/token-overlay.png \
+  'prompt=Create a professional design specification redline sheet.
+
+Reproduce the original UI faithfully in the CENTER of the image (preserve exact
+proportions, colors, typography, and layout). Surround it with token annotations.
+
+ANNOTATION STYLE:
+- Label boxes: dark navy (#0F172A bg, #F8FAFC text, 1px #334155 border, 6px radius)
+- Callout lines: thin amber (#F59E0B) connecting labels to UI elements
+- Color swatches: 14x14px filled squares inline with each color label
+- Spacing arrows: thin double-headed arrows (#38BDF8) with px measurements
+
+[LEFT SIDE — Spacing & Layout]
+Double-headed arrows annotating: {spacing values from Phase 1}
+
+[RIGHT SIDE — Typography & Colors]
+TYPOGRAPHY group: {font-family descriptions, sizes, weights from Phase 1}
+COLOR group: {hex values with filled swatches from Phase 1}
+BORDER RADIUS group: {radius values from Phase 1}
+SHADOWS (below UI if present): {shadow specs from Phase 1}
+
+OUTPUT: Wide format 1600x1000px, white background, UI centered,
+professional Figma-style handoff sheet aesthetic.' \
+  resolution=2K \
+  use_thinking=true \
+  number_of_images=1
+```
+
+#### Phase 4: Verify the Overlay
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=analyze \
+  image_path=blueprint/token-overlay.png \
+  'prompt=Evaluate this design specification sheet:
+1. Is the UI faithfully reproduced in the center?
+2. Are annotations legible (label text, callout lines, color swatches)?
+3. Any obvious inaccuracies (wrong colors, empty swatches, misidentified fonts)?
+Report any issues found.'
+```
+
+If the verify step flags inaccuracies, note them in `tokens.json` as comments and proceed — `tokens.json` is the authoritative record; the overlay is visual evidence.
 
 ### Token File Format
 
@@ -481,36 +541,47 @@ List of every non-token visual asset. See [Asset Inventory Format](#asset-invent
 amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path=approved-screen.png \
-  output_path=containment-overlay.png \
+  output_path=blueprint/containment-overlay.png \
   'prompt=Draw containment overlay with labeled bounding boxes for every component...'
 
 # 2. Check coverage (self-judgment)
 amplifier tool invoke nano-banana \
   operation=analyze \
-  image_path=containment-overlay.png \
+  image_path=blueprint/containment-overlay.png \
   'prompt=Find any uncovered pixels...'
 # → If gaps found: define new components, regenerate overlay, check again
 # → If no gaps: proceed
 
-# 3. Extract design tokens
+# 3. Extract design tokens (raw analysis)
 amplifier tool invoke nano-banana \
   operation=analyze \
   image_path=approved-screen.png \
-  'prompt=Extract all design tokens...'
-# → Save as tokens.json
+  'prompt=Extract all design tokens: colors (hex), typography (visual description + size/weight),
+spacing (px), border-radius (px), shadows. Output structured JSON.'
+# → Save as blueprint/tokens.json
 
-# 4. Identify and inventory assets
+# 4. Generate token spec overlay (redline sheet)
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path=approved-screen.png \
+  output_path=blueprint/token-overlay.png \
+  'prompt=Professional redline sheet: UI centered, token callouts surrounding it.
+  Left: spacing arrows. Right: typography, colors with swatches, border-radius, shadows.
+  Amber callout lines, navy label boxes, 1600x1000px white background.'
+# → Verify with nano-banana analyze afterward
+
+# 5. Identify and inventory assets
 amplifier tool invoke nano-banana \
   operation=analyze \
   image_path=approved-screen.png \
   'prompt=Identify every visual asset...'
-# → Save as assets.md
+# → Save as blueprint/assets.md
 
-# 5. Compile component spec
+# 6. Compile component spec
 # → Using the containment overlay component list + tokens + assets
-# → Save as component-spec.md
+# → Save as blueprint/component-spec.md
 
-# 6. Final validation
+# 7. Final validation
 # → Verify: every component has tokens, every asset is referenced,
 #    every token is used, no orphans in any file
 ```
@@ -519,9 +590,10 @@ amplifier tool invoke nano-banana \
 
 ```
 blueprint/
-├── containment-overlay.png   # Visual proof of full coverage
+├── containment-overlay.png   # Visual proof of 100% pixel coverage
 ├── component-spec.md         # Hierarchical component specification
-├── tokens.json               # Design token values
+├── tokens.json               # Design token values (authoritative record)
+├── token-overlay.png         # Redline handoff sheet with all tokens annotated
 └── assets.md                 # Asset inventory
 ```
 
@@ -559,7 +631,6 @@ Use this pattern when:
 ## Related Skills
 
 - **screenshot-comparison** — Visual diff for `/forge` convergence loop (consumes this skill's output)
-- **font-matching** — Identify font families during token extraction
 - **icon-finding** — Select icons from Lucide/Heroicons/Feather during asset identification
 - **detail-refinement** — Per-screen refinement before blueprint extraction
 
@@ -567,4 +638,4 @@ Use this pattern when:
 
 ## Summary
 
-**The containment model is the spec.** Every pixel gets a container. The agent judges its own work. Three output files — component spec, tokens, assets — give `/forge` everything it needs to generate code with nothing missing.
+**The containment model is the spec.** Every pixel gets a container. The agent judges its own work. Four output files — component spec, tokens.json, token-overlay.png (redline handoff sheet), and assets — give `/forge` everything it needs to generate code with nothing missing.
