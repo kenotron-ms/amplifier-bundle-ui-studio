@@ -55,24 +55,29 @@ amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path=approved-screen.png \
   output_path=containment-overlay.png \
-  'prompt=TAKE THIS IMAGE and draw a CONTAINMENT OVERLAY on top of it.
+  'prompt=TAKE THIS IMAGE and draw a COMPONENT CONTAINMENT OVERLAY.
 
-For EVERY visual element in the screen, draw:
-- A labeled bounding box showing the component boundary
-- A text label with the component name (e.g., "HeaderBar", "ArticleCard", "HeroBackground")
-- Hierarchy indicators: nest child boxes inside parent boxes
-- Use distinct colors for different hierarchy levels:
-  - Level 0 (root/screen): no box needed
-  - Level 1 (major sections): RED borders
-  - Level 2 (cards, groups): BLUE borders
-  - Level 3 (individual elements): GREEN borders
+STEP 1 — IDENTIFY CONTENT AREA:
+Determine the application content area. Exclude any OS or window chrome (window title bar,
+frame border, menu bar, taskbar, OS status bar shell). All annotation applies only to the
+app content region. Do not label chrome elements.
 
-Every pixel must fall inside at least one labeled box.
-Leave NO region unlabeled. If an area is a background, label it (e.g., "ScreenBackground").
-If an area is whitespace/padding, it belongs to its parent container.
+STEP 2 — DRAW COMPONENT BORDERS (no fill — design must remain fully visible):
+- Level 1 (major sections, full-width containers): 2px solid #EF4444 (red)
+- Level 2 (cards, panels, grouped elements): 2px solid #3B82F6 (blue)
+- Level 3 (individual elements — buttons, inputs, text, icons, images): 2px solid #22C55E (green)
+Nest borders: child borders sit visually inside their parent borders.
 
-Use semi-transparent fills so the original design is visible beneath.
-Make labels bold with drop shadows for readability.' \
+STEP 3 — LABEL EACH COMPONENT (labels placed OUTSIDE component bounds, never on top of content):
+- Draw a thin 1px leader line from the label to the nearest edge of its component
+- Label format: white pill (#FFFFFF background, 10px border-radius, 4px 8px padding),
+  colored dot matching the level (red/blue/green) + ComponentName in bold 11px monospace
+  Example: "⬤ HeaderBar"  "⬤ ArticleCard"  "⬤ SearchInput"
+- Place each label in clear space outside its component — prefer outside the screen boundary
+- Labels must NOT overlap the component they annotate or obscure adjacent components
+
+Every component in the content area must have exactly one label.
+Backgrounds, spacing, and padding regions belong to their nearest parent container.' \
   aspect_ratio=preserve \
   resolution=2K \
   use_thinking=true \
@@ -81,14 +86,14 @@ Make labels bold with drop shadows for readability.' \
 
 **Critical parameter:** `reference_image_path` tells nano-banana to annotate the existing image — not generate a new one from scratch.
 
-**Output:** `containment-overlay.png` — the approved screen with labeled bounding boxes for every component.
+**Output:** `containment-overlay.png` — the app content area with thin component borders and external pill labels.
 
 ### What the Overlay Shows
 
-- **Component boundaries:** Colored rectangles around every element
-- **Component names:** Text labels identifying each element (e.g., "NavBar", "SearchInput", "ArticleThumbnail")
-- **Hierarchy:** Nested boxes showing parent-child relationships
-- **Full coverage:** Every region of the screen is inside at least one box
+- **Component borders:** Thin colored outlines (no fill) — red/blue/green by hierarchy level — design fully visible beneath
+- **External labels:** Pill-format labels positioned outside each component's boundary, connected by a thin leader line — never overlaid on the content
+- **Hierarchy:** Nested borders show parent-child relationships; label dots match the border color
+- **Chrome excluded:** OS window frames, title bars, and status bar shells are ignored
 
 ---
 
@@ -248,34 +253,47 @@ amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path=approved-screen.png \
   output_path=blueprint/token-overlay.png \
-  'prompt=Create a professional design specification redline sheet.
+  'prompt=Create a professional design token specification sheet.
 
-Reproduce the original UI faithfully in the CENTER of the image (preserve exact
-proportions, colors, typography, and layout). Surround it with token annotations.
+LAYOUT: Wide format 1600x1000px, white (#FFFFFF) background.
+Reproduce the original UI faithfully and UNMODIFIED in the center — no text, arrows, or lines
+drawn on top of the UI content itself. Leave a clear white margin around the UI on all sides.
+All annotations live OUTSIDE the UI bounds, in the surrounding white margin area only.
+Callout lines originate from a label in the margin and point TO the relevant UI element.
 
-ANNOTATION STYLE:
-- Label boxes: dark navy (#0F172A bg, #F8FAFC text, 1px #334155 border, 6px radius)
-- Callout lines: thin amber (#F59E0B) connecting labels to UI elements
-- Color swatches: 14x14px filled squares inline with each color label
-- Spacing arrows: thin double-headed arrows (#38BDF8) with px measurements
+EXCLUDE: Do not annotate OS/window chrome (title bar, frame, menu bar). Focus on app content only.
 
-[LEFT SIDE — Spacing & Layout]
-Double-headed arrows annotating: {spacing values from Phase 1}
+LABEL ANATOMY (every label uses this exact format — no exceptions):
+  ┌─────────────────────────────────┐
+  │ [GROUP]  token-name: value      │
+  └─────────────────────────────────┘
+  - White background (#FFFFFF), 1px border (#CBD5E1), 6px border-radius
+  - Monospace font, 11px
+  - GROUP tag is 2-3 letter uppercase abbreviation in a colored chip:
+      SPC (spacing) = #38BDF8 blue chip
+      TYP (typography) = #A78BFA purple chip
+      CLR (color) = #F472B6 pink chip  + 12x12px filled color swatch before the hex value
+      RAD (border-radius) = #FB923C orange chip
+      SHD (shadow) = #94A3B8 gray chip
+      ICN (icon) = #34D399 green chip
 
-[RIGHT SIDE — Typography & Colors]
-TYPOGRAPHY group: {font-family descriptions, sizes, weights from Phase 1}
-COLOR group: {hex values with filled swatches from Phase 1}
-BORDER RADIUS group: {radius values from Phase 1}
-SHADOWS (below UI if present): {shadow specs from Phase 1}
+LEFT MARGIN — Spacing:
+Annotate each spacing value with a double-headed arrow in the UI margin pointing to the measured
+gap, plus a SPC label: e.g. "[SPC] spacing-md: 16px"
+Values: {spacing values from Phase 1}
 
-[BOTTOM — Icons]
-ICONS group: For every icon visible in the screen, draw a callout line to it and annotate:
-- Visual description of the icon shape (mechanical, not conceptual — e.g. "magnifying glass", "house outline")
-- Size in px (e.g. 24x24)
-- Location/role (e.g. "nav-search", "header-back", "card-bookmark")
+RIGHT MARGIN — Typography, then Colors, then Border Radius, then Shadows:
+Stack label groups vertically with a group header row between them.
+TYP labels: e.g. "[TYP] font-size-h1: 32px / Inter 700"
+CLR labels: e.g. "[CLR] color-text-primary: #1A1A2E" with color swatch
+RAD labels: e.g. "[RAD] radius-md: 8px"
+SHD labels: e.g. "[SHD] shadow-card: 0 2px 8px rgba(0,0,0,.12)"
+Values: {typography, color, radius, shadow values from Phase 1}
 
-OUTPUT: Wide format 1600x1000px, white background, UI centered,
-professional Figma-style handoff sheet aesthetic.' \
+BOTTOM MARGIN — Icons:
+For every icon visible in the app content, one ICN label pointing to it:
+e.g. "[ICN] nav-search: magnifying glass, 24x24px"
+Describe the icon shape mechanically (not conceptually).' \
   resolution=2K \
   use_thinking=true \
   number_of_images=1

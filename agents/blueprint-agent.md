@@ -60,23 +60,29 @@ amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path={approved_screen_path} \
   output_path=ui-studio/blueprints/{screen-name}/containment-overlay.png \
-  'prompt=TAKE THIS IMAGE and draw a CONTAINMENT OVERLAY on top of it.
+  'prompt=TAKE THIS IMAGE and draw a COMPONENT CONTAINMENT OVERLAY.
 
-For EVERY visual element in the screen, draw:
-- A labeled bounding box showing the component boundary
-- A text label with the component name (e.g., "HeaderBar", "ArticleCard", "HeroBackground")
-- Hierarchy indicators: nest child boxes inside parent boxes
-- Use distinct colors for different hierarchy levels:
-  - Level 1 (major sections): RED borders
-  - Level 2 (cards, groups): BLUE borders
-  - Level 3 (individual elements): GREEN borders
+STEP 1 — IDENTIFY CONTENT AREA:
+Determine the application content area. Exclude any OS or window chrome (window title bar,
+frame border, menu bar, taskbar, OS status bar shell). All annotation applies only to the
+app content region. Do not label chrome elements.
 
-Every pixel must fall inside at least one labeled box.
-Leave NO region unlabeled. If an area is a background, label it (e.g., "ScreenBackground").
-If an area is whitespace/padding, it belongs to its parent container.
+STEP 2 — DRAW COMPONENT BORDERS (no fill — design must remain fully visible):
+- Level 1 (major sections, full-width containers): 2px solid #EF4444 (red)
+- Level 2 (cards, panels, grouped elements): 2px solid #3B82F6 (blue)
+- Level 3 (individual elements — buttons, inputs, text, icons, images): 2px solid #22C55E (green)
+Nest borders: child borders sit visually inside their parent borders.
 
-Use semi-transparent fills so the original design is visible beneath.
-Make labels bold with drop shadows for readability.' \
+STEP 3 — LABEL EACH COMPONENT (labels placed OUTSIDE component bounds, never on top of content):
+- Draw a thin 1px leader line from the label to the nearest edge of its component
+- Label format: white pill (#FFFFFF background, 10px border-radius, 4px 8px padding),
+  colored dot matching the level (red/blue/green) + ComponentName in bold 11px monospace
+  Example: "⬤ HeaderBar"  "⬤ ArticleCard"  "⬤ SearchInput"
+- Place each label in clear space outside its component — prefer outside the screen boundary
+- Labels must NOT overlap the component they annotate or obscure adjacent components
+
+Every component in the content area must have exactly one label.
+Backgrounds, spacing, and padding regions belong to their nearest parent container.' \
   aspect_ratio=preserve \
   resolution=2K \
   use_thinking=true \
@@ -244,61 +250,66 @@ amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path={approved_screen_path} \
   output_path=ui-studio/blueprints/{screen-name}/token-overlay.png \
-  'prompt=Create a professional design specification redline sheet.
+  'prompt=Create a professional design token specification sheet.
 
-Reproduce the original UI faithfully in the CENTER of the image (preserve exact proportions,
-colors, typography, and layout). Then surround it with token annotation callouts.
+LAYOUT: Wide format 1600x1000px, white (#FFFFFF) background.
+Reproduce the original UI faithfully and UNMODIFIED in the center — no text, arrows, or lines
+drawn on top of the UI content itself. Leave a clear white margin around the UI on all sides.
+All annotations live OUTSIDE the UI bounds, in the surrounding white margin area only.
+Callout lines originate from a label in the margin and point TO the relevant UI element.
 
-ANNOTATION STYLE:
-- Label boxes: dark navy background (#0F172A), light text (#F8FAFC), 1px border (#334155), 6px radius
-- Callout lines: thin amber lines (#F59E0B) connecting labels to UI elements
-- Color swatches: small 14x14px filled squares showing the actual color inline with label
-- Spacing arrows: thin double-headed arrows (#38BDF8) with px measurements
+EXCLUDE: Do not annotate OS/window chrome (title bar, frame, menu bar). App content only.
 
-[LEFT SIDE — Spacing & Layout]
-Annotate spacing values with double-headed arrows:
-- {spacing values and measurements extracted in Phase 4a}
+LABEL ANATOMY (every label uses this exact format — no exceptions):
+  ┌─────────────────────────────────┐
+  │ [GROUP]  token-name: value      │
+  └─────────────────────────────────┘
+  - White background (#FFFFFF), 1px border (#CBD5E1), 6px border-radius, monospace 11px
+  - GROUP tag is a colored chip (2-3 letter uppercase abbreviation):
+      SPC (spacing) = #38BDF8 blue chip
+      TYP (typography) = #A78BFA purple chip
+      CLR (color) = #F472B6 pink chip  + 12x12px filled color swatch before the hex value
+      RAD (border-radius) = #FB923C orange chip
+      SHD (shadow) = #94A3B8 gray chip
+      ICN (icon) = #34D399 green chip
 
-[RIGHT SIDE — Typography & Colors]
-TYPOGRAPHY group (top right):
-- {typography values extracted in Phase 4a — font-family, size, weight for each text style}
+LEFT MARGIN — Spacing:
+Double-headed arrows pointing to measured gaps + SPC labels:
+{spacing values from Phase 4a}
 
-COLOR group (middle right):
-- {color values with filled swatches — each entry shows the swatch + hex + token name}
+RIGHT MARGIN — Typography, Colors, Border Radius, Shadows (stacked vertically with group headers):
+{typography values from Phase 4a as TYP labels}
+{color values from Phase 4a as CLR labels with swatches}
+{radius values from Phase 4a as RAD labels}
+{shadow values from Phase 4a as SHD labels}
 
-BORDER RADIUS group (bottom right):
-- {radius values per component}
-
-SHADOWS group (below the UI if present):
-- {shadow specs if any}
-
-OUTPUT: Wide format 1600x1000px, white background, UI centered vertically and horizontally,
-professional Figma-style handoff sheet aesthetic.' \
+BOTTOM MARGIN — Icons:
+One ICN label per icon in the app content, pointing to it:
+e.g. "[ICN] nav-search: magnifying glass, 24x24px"
+{icon descriptions from Phase 4a}' \
   resolution=2K \
   use_thinking=true \
   number_of_images=1
 ```
 
-**Key:** Populate the bracketed sections with the actual extracted values from Phase 4a. The more specific the prompt, the more accurate the overlay.
+**Key:** Populate the bracketed sections with the actual extracted values from Phase 4a. The label anatomy is fixed — every token renders as `[GROUP] token-name: value` in the same monospace style so downstream vision LLMs can parse the overlay reliably.
 
 ### Phase 4d: Verify the Overlay
-
-Verify the overlay is legible and accurate before proceeding:
 
 ```bash
 amplifier tool invoke nano-banana \
   operation=analyze \
   image_path=ui-studio/blueprints/{screen-name}/token-overlay.png \
-  'prompt=Evaluate this design specification annotation sheet:
-1. Is the UI faithfully reproduced in the center?
-2. Are the token annotations legible (label text, callout lines, color swatches)?
-3. Are there any obvious inaccuracies (wrong colors, misidentified fonts, empty swatches)?
-4. Does the layout clearly separate spacing (left), typography (top-right), colors (mid-right), and radius/shadows (bottom-right)?
-
-Report any issues found.'
+  'prompt=Evaluate this design token specification sheet:
+1. Is the UI reproduced cleanly in the center with NO annotations drawn on top of it?
+2. Are all labels in the surrounding margin only, connected by callout lines?
+3. Do labels follow the [GROUP] token-name: value format in monospace?
+4. Are color swatches filled (not empty/white)?
+5. Any inaccuracies or missing token groups?
+Report issues found.'
 ```
 
-If the verification identifies inaccuracies (e.g., empty color swatches, wrong font rendering), note them in the tokens.json as comments and proceed — the overlay is a visual aid, not a blocker. The tokens.json values are the authoritative record.
+If the verification flags inaccuracies (empty swatches, annotations overlaid on UI), note them in tokens.json and proceed — tokens.json is the authoritative record; the overlay is visual evidence for forge.
 
 **Output:** `ui-studio/blueprints/{screen-name}/token-overlay.png`
 
