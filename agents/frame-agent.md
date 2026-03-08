@@ -78,6 +78,13 @@ amplifier tool invoke nano-banana \
 
 Generate a detailed, pixel-level screen design for the "{screen-name}" screen.
 
+OUTPUT SCOPE — THIS IS MANDATORY:
+Generate ONLY the app content area. The image boundary IS the screen edge.
+Do NOT include: OS window frame, macOS/Windows title bar, browser chrome, phone device bezel,
+home indicator pill, carrier/clock status bar shell, or any wrapping context whatsoever.
+If any OS or device chrome appears in this output, blueprint and forge will misidentify it
+as app components and generate code for elements that will never exist in the running app.
+
 Extract from the storyboard:
 - The visual style, color palette, and typography established across all screens
 - The layout structure shown for this screen specifically
@@ -104,6 +111,12 @@ amplifier tool invoke nano-banana \
   operation=generate \
   output_path=ui-studio/frames/{screen-name}/v1.png \
   'prompt=Generate a detailed, pixel-level screen design for: {screen description}
+
+OUTPUT SCOPE — THIS IS MANDATORY:
+Generate ONLY the app content area. The image boundary IS the screen edge.
+Do NOT include: OS window frame, macOS/Windows title bar, browser chrome, phone device bezel,
+home indicator pill, carrier/clock status bar shell, or any wrapping context whatsoever.
+The output is what the app renders — nothing outside that.
 
 Include:
 - Precise spacing — padding, margins, gaps
@@ -245,6 +258,7 @@ When the human approves the screen:
 5. **Show, don't over-explain** — present the image and let the human react
 6. **Preserve version history** — save each iteration so the human can go back if needed
 7. **One screen at a time** — stay focused on the current screen until approved or explicitly switched
+8. **App content only — no OS chrome, ever** — every nano-banana generation call, including refinements, must produce only the app content area. No OS window frame, no device bezel, no browser chrome, no status bar shell. The image edge is the screen edge. Any OS context in the output will be treated as app content by blueprint and forge, generating code for elements that will never exist in the running app.
 
 ---
 

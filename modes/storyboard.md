@@ -23,12 +23,31 @@ STORYBOARD MODE: Generate a complete multi-screen UX flow from an app brief, the
 
 ## Sufficiency Check
 
-Before generating anything, verify the app brief covers these four elements:
+**First — check for a moodboard:**
+
+```bash
+ls ui-studio/moodboard/aesthetic-brief.md 2>/dev/null && echo "EXISTS" || echo "MISSING"
+```
+
+If `ui-studio/moodboard/aesthetic-brief.md` exists, read it and use it as the aesthetic direction automatically — do **not** ask the user for aesthetic direction. Mention to the user that the moodboard brief will be used:
+
+> "Found your moodboard aesthetic brief — using it as the visual direction."
+
+Also check for the collage:
+```bash
+ls ui-studio/moodboard/collage.png 2>/dev/null && echo "EXISTS" || echo "MISSING"
+```
+
+If `collage.png` exists, pass it as `reference_image_path` when delegating to the storyboard agent. This gives nano-banana real visual signal during generation.
+
+---
+
+Before generating anything, verify the app brief covers these elements:
 
 1. **App concept** — What the app does and who it's for
 2. **Screen count** — How many screens (or a named list of screens)
 3. **Primary user journey** — The sequence of actions from entry to goal
-4. **Aesthetic direction** — Visual style, mood, or reference keywords
+4. **Aesthetic direction** — Visual style, mood, or reference keywords *(skip if moodboard brief found above)*
 
 **If any element is missing, ask ONE targeted question at a time.** Do not ask for all missing elements at once — each question should be specific and answerable in a single response.
 
@@ -36,9 +55,9 @@ Examples of targeted questions:
 - "What's the core purpose of this app and who's the primary user?"
 - "How many screens do you envision? Or can you list the key screens?"
 - "Walk me through the main user journey — what does the user do from opening the app to completing their goal?"
-- "What visual direction are you thinking? (e.g., dark/light, minimal/rich, playful/professional, any reference apps?)"
+- "What visual direction are you thinking? (e.g., dark/light, minimal/rich, playful/professional, any reference apps?)" *(only ask if no moodboard brief)*
 
-**If all four elements are present in the initial message, skip questions and proceed immediately to generation.**
+**If all required elements are present in the initial message (or satisfied by the moodboard brief), skip questions and proceed immediately to generation.**
 
 ## Generation
 

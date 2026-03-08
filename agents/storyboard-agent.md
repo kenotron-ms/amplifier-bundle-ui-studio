@@ -55,17 +55,64 @@ This skill contains the complete methodology — prompt structure, worked exampl
 
 ### First Generation (v1)
 
+**Check for moodboard collage first:**
+
+```bash
+ls ui-studio/moodboard/collage.png 2>/dev/null && echo "EXISTS" || echo "MISSING"
+```
+
+If `collage.png` exists, pass it as `reference_image_path` — nano-banana will use it as live visual context when generating screens, producing output that genuinely reflects the collected inspiration rather than interpreting the aesthetic brief as text alone.
+
 Construct the nano-banana prompt following the skill's prompt structure:
 
-1. **Visual style declaration** — once, applies to all screens
+1. **Visual style declaration** — once, applies to all screens (pull from `aesthetic-brief.md` if available, otherwise from the user's brief)
 2. **Complete screen list** — all names upfront
 3. **User journey narrative** — flow between screens
 4. **Per-screen descriptions** — content and purpose of each
 5. **Layout and labeling instructions** — grid arrangement, screen labels, transition arrows
 
-Invoke nano-banana:
+Invoke nano-banana — **with collage as reference if available:**
 
 ```bash
+# With moodboard collage (preferred when available):
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path=ui-studio/moodboard/collage.png \
+  output_path=ui-studio/storyboards/storyboard_v1.png \
+  'prompt=USE THE REFERENCE MOODBOARD IMAGE as the visual direction for this storyboard. Match its aesthetic — palette, density, typography feel, and mood — across all screens.
+
+Generate a complete multi-screen UX storyboard for [app description].
+
+VISUAL STYLE (applies to ALL screens):
+[aesthetic direction from aesthetic-brief.md or user brief]
+
+SCREENS (generate ALL of these together in one image):
+1. [ScreenName]
+2. [ScreenName]
+...
+
+USER JOURNEY:
+[narrative flow between screens]
+
+SCREEN DESCRIPTIONS:
+1. [ScreenName] — [content and layout for this screen]
+2. [ScreenName] — [content and layout for this screen]
+...
+
+OUTPUT LAYOUT:
+- Arrange all screens in a clear grid or flow layout
+- Label each screen with its name above or below the frame
+- Draw arrows between screens showing navigation transitions
+- Label each transition with the triggering action
+- Mark the entry point clearly
+- Low-to-mid fidelity: focus on layout, hierarchy, and flow
+- All screens at mobile aspect ratio (roughly 9:19.5)' \
+  aspect_ratio=16:9 \
+  resolution=2K \
+  use_thinking=true \
+  number_of_images=1
+
+# Without moodboard collage (no reference_image_path):
 amplifier tool invoke nano-banana \
   operation=generate \
   output_path=ui-studio/storyboards/storyboard_v1.png \
@@ -204,9 +251,25 @@ When the human approves the storyboard:
    Produce `statechart.md` with three sections:
 
    **Section 1 — Mermaid diagram** (`stateDiagram-v2`):
-   - Every screen is a state; every transition is a labeled arrow using `snake_case` event names
+   - Every screen is a state
+   - Every transition arrow label has **two parts** separated by ` / `:
+     `event_name / trigger description`
+     - `event_name` — `snake_case` identifier used by forge's routing logic
+     - `trigger description` — the exact UI interaction that causes the transition (what forge will wire as a click/tap/swipe handler)
    - `[*]` is the entry point; `[*]` as a target marks app-exit flows
    - Use `direction LR` for readability
+   - **Example:**
+     ```
+     stateDiagram-v2
+       direction LR
+       [*] --> Home : initial / app launch
+       Home --> Discover : tap_discover_tab / tap "Discover" tab in bottom nav
+       Home --> EpisodePlayer : tap_podcast_card / tap podcast card in feed
+       Discover --> EpisodePlayer : tap_podcast_card / tap podcast card in grid
+       EpisodePlayer --> Library : tap_save / tap "Save to Library" button
+       Home --> Profile : tap_profile_tab / tap "Profile" tab in bottom nav
+       EpisodePlayer --> Home : tap_back / tap back button or swipe right
+     ```
 
    **Section 2 — Screen Classification table:**
    | Screen | Type | Parent Route | Notes |
@@ -216,8 +279,10 @@ When the human approves the storyboard:
    - Classification rule: full-screen navigable view → `route`; modal/sheet/drawer/dialog → `overlay`; when ambiguous → `route`
 
    **Section 3 — Transitions table:**
-   | From | To | Event | Transition Type |
-   |------|----|-------|----------------|
+   | From | To | Event | Trigger | Transition Type |
+   |------|----|-------|---------|----------------|
+   - `Event`: `snake_case` identifier matching the left side of the Mermaid arrow label
+   - `Trigger`: human-readable description of the exact UI element and gesture that causes this transition — what forge will wire up as a click/tap/swipe handler (e.g., `tap "Get Started" button`, `tap "Discover" tab in bottom nav`, `swipe left on episode card`)
    - `Transition Type` is one of: `initial`, `tab`, `push`, `pop`, `navigate`, `overlay`, `dismiss`
    - `initial` — app entry. `tab` — persistent nav switch. `push`/`pop` — stack nav. `navigate` — replace stack. `overlay`/`dismiss` — open/close a modal without route change.
 

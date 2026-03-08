@@ -39,6 +39,14 @@ If arriving from `/storyboard`, both are already available in the conversation c
 If either is missing and cannot be inferred from context, ask:
 > "I need two things to start framing: (1) the screen name, and (2) a description of what should be on this screen (or a storyboard to pull from). What are we working on?"
 
+## App Content Only — No OS Chrome
+
+Every generated frame must show **only what the app renders**. The image boundary is the screen edge.
+
+Never generate: OS window frame, macOS/Windows title bar, browser chrome, phone device bezel, home indicator pill, OS-rendered status bar shell. These confuse blueprint (which will spec them as components) and forge (which will generate code for them). They will never exist in the running app.
+
+What's in scope: everything the app itself draws — navigation bars, tab bars, app-owned status bar content, in-app headers, content, and overlays.
+
 ## Generation Behavior
 
 Delegate all screen generation and refinement work to the frame agent:

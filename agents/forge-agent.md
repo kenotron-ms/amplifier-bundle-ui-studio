@@ -38,6 +38,26 @@ You are the automated app-scoped forge agent. You take the complete pipeline out
 
 **Execution model:** Six phases. Phases 0–4 establish the app foundation (tokens, routing, app shell). Phase 5 converges each route to ≥95% visual match using the screenshot comparison loop. Re-entry is supported at any phase via `.forge-progress.json`.
 
+## OS Chrome — Never Generate Code For It
+
+> **Your code scope is the app content area only. Never generate code for OS chrome.**
+
+Approved mockups often show the app inside an OS window (macOS title bar, Windows frame, Android system status bar shell, etc.) for illustration purposes. This chrome is context, not a spec requirement.
+
+**Never generate code for:**
+- OS window frame, title bar, traffic lights / close buttons
+- OS menu bar or taskbar
+- OS-rendered status bar shell (the system-drawn carrier/clock/battery bar)
+- Any UI element the running app does not own
+
+**Do generate code for (app-owned):**
+- In-app navigation bars and tab bars
+- In-app status bar components (e.g., a React Native `<StatusBar>` the app renders)
+- Custom Electron/Tauri title area content
+- App-defined menus and notifications
+
+When comparing screenshots for convergence, ignore OS chrome differences entirely — only app content pixel coverage counts.
+
 ---
 
 ## Phase 0: Validation & Re-entry
@@ -166,6 +186,8 @@ COMBINED (most apps):
 IF no "tab" transitions:
   → Stack-only OR flat routing (no persistent nav bar)
 ```
+
+**Using the Trigger column:** The Transitions table includes a `Trigger` column (e.g., `tap "Discover" tab in bottom nav`, `tap "Get Started" button`). When implementing each screen, use the Trigger description to wire the correct UI element to the navigation call — don't guess which button/gesture causes a transition.
 
 Produce a routing plan and record in `.forge-progress.json`:
 
@@ -458,43 +480,60 @@ magick montage ui-studio/frames/{screen-name}/approved.png \
 
 **Layout rule:** Original mockup ALWAYS LEFT, implementation ALWAYS RIGHT. Non-negotiable.
 
-### Step C: Annotate + Analyze
+### Step C: Generate Prescriptive Critique Overlay
+
+Generate a detailed, numbered critique overlay — not just diff circles, but specific callouts with exact values and fix hints that a developer can act on directly.
 
 ```bash
-# Annotate
 amplifier tool invoke nano-banana \
   operation=generate \
   reference_image_path=ui-studio/forge/{target}/routes/{screen-name}/comparison.png \
-  output_path=ui-studio/forge/{target}/routes/{screen-name}/comparison-annotated.png \
-  'prompt=TAKE THIS IMAGE (original LEFT, implementation RIGHT) and ADD OVERLAY ANNOTATIONS:
-- RED circles/arrows on areas that DO NOT MATCH (with text labels)
-- GREEN checkmarks on areas that MATCH well
-- YELLOW warnings for CLOSE but not exact
-- Overall match percentage at top
-Focus on the most significant visual differences first.' \
-  aspect_ratio=preserve resolution=2K use_thinking=true
+  output_path=ui-studio/forge/{target}/routes/{screen-name}/critique.png \
+  'prompt=TAKE THIS SIDE-BY-SIDE COMPARISON (original LEFT, implementation RIGHT).
 
-# Analyze
+Generate a PRESCRIPTIVE CRITIQUE OVERLAY. Your job: identify every visual difference and annotate it with enough detail that a developer can write the exact code fix without looking at anything else.
+
+For each difference found (maximum 8, ordered HIGH → MED → LOW severity):
+1. Draw a numbered callout circle on the RIGHT side at the problem location
+2. Draw a thin leader line to a label box containing:
+   - Severity badge: [HIGH] / [MED] / [LOW]
+   - Problem (1 line): e.g. "Background too light"
+   - Should be (from LEFT): e.g. "#1A1A2E" or "16px gap" or "SemiBold 600"
+   - Currently is (RIGHT): e.g. "#2D2D4E" or "24px gap" or "Regular 400"
+   - Fix hint: e.g. "background token" or "margin-bottom" or "font-weight"
+
+Color-code callout circles by severity: RED = HIGH, ORANGE = MED, YELLOW = LOW.
+Draw GREEN checkmark regions over areas that already match well.
+Show overall match % in a prominent badge at top-center.
+
+Keep label boxes in the margin area outside the screen — never obscure the UI content itself.' \
+  aspect_ratio=preserve resolution=2K use_thinking=true
+```
+
+### Step C2: Analyze Critique for Structured Diff
+
+```bash
 amplifier tool invoke nano-banana \
   operation=analyze \
-  image_path=ui-studio/forge/{target}/routes/{screen-name}/comparison-annotated.png \
-  'prompt=Analyze this annotated comparison (original LEFT, implementation RIGHT).
+  image_path=ui-studio/forge/{target}/routes/{screen-name}/critique.png \
+  'prompt=Analyze this prescriptive critique overlay (original LEFT, implementation RIGHT, numbered callouts on RIGHT side).
 Return JSON:
 {
   "match_percentage": <0-100>,
   "differences": [
     {
       "priority": 1,
-      "location": "<screen area>",
+      "callout_number": <number shown in overlay>,
+      "location": "<screen area, e.g. top nav, hero section, bottom tab>",
       "severity": "HIGH|MEDIUM|LOW",
       "description": "<what is wrong>",
-      "original_state": "<what it should be>",
-      "current_state": "<what it is now>",
-      "suggested_fix": "<specific code change>"
+      "original_value": "<exact value from left — color hex, px, weight, etc.>",
+      "current_value": "<what the implementation currently has>",
+      "suggested_fix": "<specific CSS property or code change, e.g. background-color: #1A1A2E>"
     }
   ]
 }
-Order by severity. Pick ONE as priority 1.'
+Order by severity (HIGH first). priority:1 is the single fix to apply next.'
 ```
 
 ### Step D: Apply ONE Fix
@@ -509,20 +548,117 @@ match_history.append(match_percentage)
 Report: "Iteration N: X% match. Fixed: [description]."
 ```
 
-Update `.forge-progress.json` route entry: `status: "in_progress"`, `match_pct`, `iteration`.
+Update `.forge-progress.json` route entry: `status: "in_progress"`, `match_pct`, `iteration`, `match_history`.
 
-### Step F: Check Stopping Conditions
+### Step F: Convergence Health Check + Stopping Conditions
 
-- `match_percentage >= threshold` → **Converged**. Mark route `status: "converged"` in progress file. Save `comparison-final.png`. Move to next route.
-- Improved from previous → continue loop
-- No improvement for 3 consecutive iterations → **Stuck**. Surface to human:
-  ```
-  Stuck at X% for 3 iterations on {screen-name}.
-  Latest: ui-studio/forge/{target}/routes/{screen-name}/comparison-annotated.png
-  Top remaining issue: [description]
-  What should I try differently?
-  ```
-- `iteration >= 15` → same stuck report
+Evaluate `match_history` **before deciding whether to continue**. Check conditions in this exact order — stop at the first that applies:
+
+---
+
+**1. Converged** — `match_percentage >= threshold`
+
+Mark route `status: "converged"` in progress file. Copy `critique.png` → `critique-final.png`. Move to next route.
+
+---
+
+**2. Regressing** — last value has dropped below the value 3 iterations ago AND below the all-time high
+
+```python
+if len(match_history) >= 3 and match_history[-1] < match_history[-3] and match_history[-1] < max(match_history):
+```
+
+The last fix made things worse overall. Revert the last code change immediately, then surface:
+
+```
+⚠ Regression on {screen-name}: {history[-3]}% → {history[-2]}% → {history[-1]}%
+The last fix reduced the match. I've reverted it.
+Critique: ui-studio/forge/{target}/routes/{screen-name}/critique.png
+Reverted fix: [description of what was just undone]
+Top remaining issue: [priority-1 difference from last analysis]
+How should I approach this differently?
+```
+
+Await human direction before continuing.
+
+---
+
+**3. Oscillating** — zigzagging with no net progress over the last 6 iterations
+
+```python
+if len(match_history) >= 6:
+    window = match_history[-6:]
+    alternating = all((window[i] - window[i-1]) * (window[i+1] - window[i]) < 0 for i in range(1, 5))
+    net_progress = window[-1] - window[0]
+    if alternating and net_progress < 2:
+```
+
+Fixes are whack-a-mole — each change improves one area and breaks another. Surface:
+
+```
+⚠ Oscillation on {screen-name}: [{history[-6:]}]
+Fixes are cycling — each change improves one area but regresses another.
+Critique: ui-studio/forge/{target}/routes/{screen-name}/critique.png
+Top two conflicting issues:
+  1. [priority-1 difference]
+  2. [priority-2 difference]
+Should I try fixing both together, restructure this component, or accept the current match?
+```
+
+Await human direction before continuing.
+
+---
+
+**4. Plateaued** — last 5 iterations all within 2% of each other, below threshold
+
+```python
+if len(match_history) >= 5:
+    window = match_history[-5:]
+    if max(window) - min(window) < 2 and max(window) < threshold:
+```
+
+Progress has stalled. The remaining differences may be structural or require a different code approach. Surface:
+
+```
+⚠ Plateau on {screen-name}: ~{avg(window):.1f}% for {len(window)} iterations (< 2% variance)
+Incremental fixes are no longer moving the needle.
+Critique: ui-studio/forge/{target}/routes/{screen-name}/critique.png
+Top remaining issue: [priority-1 difference — description, original_value, current_value]
+Options:
+  (a) Accept this match and move on
+  (b) Restructure the component implementation
+  (c) Lower the threshold for this screen to {max(window) - 2}%
+What would you like to do?
+```
+
+Await human direction before continuing.
+
+---
+
+**5. Stuck** — no improvement for 3 consecutive iterations (but not oscillating or plateaued)
+
+```python
+if len(match_history) >= 3 and match_history[-1] <= match_history[-3]:
+```
+
+```
+⚠ Stuck at {match_percentage}% for 3 iterations on {screen-name}.
+Critique: ui-studio/forge/{target}/routes/{screen-name}/critique.png
+Top remaining issue: [priority-1 difference]
+What should I try differently?
+```
+
+Await human direction before continuing.
+
+---
+
+**6. Hard limit** — `iteration >= 20`
+
+Surface the same stuck report regardless of recent trend. Include full `match_history` for human review.
+
+---
+
+**7. Otherwise** — improved from previous → loop back to Step A.
 
 ### Overlays (after all routes converged)
 

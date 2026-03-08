@@ -5,31 +5,54 @@ version: 1.0.0
 license: MIT
 ---
 
-# Blueprint Extraction: No Pixel Without a Container
+# Blueprint Extraction: No App Pixel Without a Container
 
-Extract a complete component spec, design tokens, and asset inventory from an approved screen PNG. The spec is not done until every pixel belongs to a named component.
+Extract a complete component spec, design tokens, and asset inventory from an approved screen PNG. The spec is not done until every **app** pixel belongs to a named component.
 
 ## Overview
 
-Blueprint extraction turns a visual design into a structured specification using the **containment model**: every pixel in the approved screen must be accounted for inside a named component. The agent self-judges completeness — no human input is needed to determine when the spec is done.
+Blueprint extraction turns a visual design into a structured specification using the **containment model**: every app pixel in the approved screen must be accounted for inside a named component. The agent self-judges completeness — no human input is needed to determine when the spec is done.
 
 **Input:** Approved screen PNG
 **Output:** Component spec, token file, asset inventory
-**Judge:** Agent (self) — "Are there uncovered pixels?"
+**Judge:** Agent (self) — "Are there uncovered app pixels?"
+
+---
+
+## OS Chrome Exclusion — First Principle
+
+> **Never annotate, spec, or generate code for OS chrome. The blueprint scope is the app content area only.**
+
+Frame images often show the app running inside an OS window for context — macOS window chrome, Windows title bar, Android system status bar shell, iOS carrier/time bar. This surrounding chrome is **purely illustrative**. It is NOT part of the app and must be completely ignored.
+
+**Always excluded from blueprint scope:**
+- OS window title bar, traffic lights / close-minimize-maximize buttons (macOS)
+- OS window frame, resize handles, drop shadow
+- OS menu bar, taskbar, dock
+- OS-rendered status bar shell (system clock, carrier, battery — the OS-drawn bar, not an in-app replica)
+- Any element the user's code will not render
+
+**May be in scope (app owns it):**
+- App-defined menu content (the app controls the items, even if the OS draws the menu bar chrome)
+- In-app notification banners and toasts
+- Custom title bar content in Electron/Tauri apps where the app renders its own title area
+- An in-app status bar component the app renders (e.g., a React Native `<StatusBar>`)
+
+**Rule of thumb:** If the user's code will not render it, it is OS chrome — exclude it.
 
 ---
 
 ## The Containment Model Principle
 
-> Every pixel must belong to a named component. The spec is NOT complete until coverage is 100%.
+> Every **app** pixel must belong to a named component. The spec is NOT complete until app content coverage is 100%.
 
 The containment model is the core idea behind blueprint extraction. It works like this:
 
-- The screen is a rectangle of pixels
-- Every pixel must be assigned to exactly one component in a hierarchy
+- **First, identify the app content area** — the rectangle of pixels the app controls (everything inside the OS chrome boundary)
+- Within the app content area, every pixel must be assigned to exactly one component in a hierarchy
 - A "component" is a named, bounded region: a card, a heading, an icon, a background
 - Parent components contain child components — the hierarchy is a tree
-- The root component is the screen itself
+- The root component is the app content area (not the OS window)
 
 **Why this matters:** During code generation (`/forge`), every component in the spec becomes a real element in code. If a visual element was never captured in the spec, it will be missing from the generated code. The containment model prevents this class of error entirely — nothing is missed because nothing is allowed to be uncovered.
 
@@ -39,8 +62,9 @@ The containment model is the core idea behind blueprint extraction. It works lik
 - Decorative space (margins, padding, backgrounds) is covered by the parent container
 
 **What "uncovered" means:**
-- A region of pixels exists that no component claims
+- A region of app-content pixels exists that no component claims
 - This is a gap — the agent must create a new component or expand an existing one to cover it
+- OS chrome pixels that appear to be "uncovered" are not a gap — they are simply out of scope
 
 ---
 
