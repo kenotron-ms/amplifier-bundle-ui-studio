@@ -42,15 +42,14 @@ You are the authoritative agent for extracting complete component specifications
 
 ## Step 0: Load Skills
 
-Before starting any work, load all three required skills:
+Before starting any work, load the required skills:
 
 ```
 load_skill('blueprint-extraction')
-load_skill('font-matching')
 load_skill('icon-finding')
 ```
 
-The `blueprint-extraction` skill contains the detailed containment model methodology, nano-banana prompt templates, and self-judgment loop protocol. The `font-matching` and `icon-finding` skills are used during asset inventory (Step 5).
+The `blueprint-extraction` skill contains the detailed containment model methodology, nano-banana prompt templates, and self-judgment loop protocol. The `icon-finding` skill is used during asset inventory (Step 5).
 
 ## Step 1: Generate Containment Overlay
 
@@ -154,11 +153,43 @@ One section per component. Every component must include:
 - Token keys must match entries in `tokens.json`
 - Asset references must match entries in `assets.md`
 
-## Step 4: Token Extraction
+## Step 4: Token Extraction + Spec Overlay
 
-Extract all design tokens from the approved screen PNG (look at the ORIGINAL image, not the overlay). Write `ui-studio/blueprints/{screen-name}/tokens.json`.
+Extract all design tokens from the approved screen PNG and generate a visual token spec overlay — a professional redline sheet that serves as both the token record and visual proof of extraction.
 
-### Token Categories
+### Phase 4a: Raw Token Analysis
+
+Use nano-banana to analyze the original screen and extract exact values:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=analyze \
+  image_path={approved_screen_path} \
+  'prompt=Extract all design tokens from this screen. For each, provide exact values:
+
+COLORS: Every distinct color as hex. Name by role: color-background-screen, color-background-card,
+  color-text-primary, color-text-secondary, color-accent-primary, color-border, etc.
+
+TYPOGRAPHY: Every distinct text style — font-family (describe visually: serif/sans-serif, geometric/humanist,
+  stroke contrast), font-size in px, font-weight (400/500/600/700), line-height.
+  Name each style: font-size-h1, font-size-body, font-size-caption, etc.
+
+SPACING: Padding and gap values in px — measure distances between elements.
+  Name: spacing-xs (4px), spacing-sm (8px), spacing-md (16px), spacing-lg (24px), spacing-xl (32px+)
+
+BORDER-RADIUS: Corner rounding per component type in px.
+  Name: radius-sm, radius-md, radius-lg, radius-pill (9999px)
+
+SHADOWS: Any drop shadows or elevation effects — offset, blur, spread, color.
+
+Output as structured JSON with all five categories.'
+```
+
+Save the raw output. This becomes your source of truth for all token values.
+
+### Phase 4b: Write tokens.json
+
+From the analysis output, write `ui-studio/blueprints/{screen-name}/tokens.json`:
 
 ```json
 {
@@ -196,20 +227,80 @@ Extract all design tokens from the approved screen PNG (look at the ORIGINAL ima
 }
 ```
 
-### Naming Convention
-
-Use consistent, semantic names:
+**Naming convention:**
 - Colors: `color-{usage}-{variant}` (e.g., `color-background-screen`, `color-text-primary`)
 - Typography: `font-{property}-{variant}` (e.g., `font-size-body`, `font-weight-bold`)
 - Spacing: `spacing-{size}` (e.g., `spacing-md`)
 - Border radius: `radius-{size}` (e.g., `radius-lg`)
 
-### Process
+### Phase 4c: Generate Token Spec Overlay
 
-1. Use nano-banana VLM to examine the original screen PNG and extract exact values
-2. For fonts: use the `font-matching` skill to identify Google Fonts matches
-3. Measure — do not guess. Extract actual pixel values from the design.
-4. Deduplicate: if two elements share the same color, they share the same token
+Generate a professional redline/handoff sheet with all tokens visually annotated on the original screen. This is the visual proof of the extraction — forge uses this to validate its implementation.
+
+Construct a prompt using the token values extracted in Phase 4a. The prompt must be detailed and specific — include the actual extracted values inline so nano-banana renders accurate callouts:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path={approved_screen_path} \
+  output_path=ui-studio/blueprints/{screen-name}/token-overlay.png \
+  'prompt=Create a professional design specification redline sheet.
+
+Reproduce the original UI faithfully in the CENTER of the image (preserve exact proportions,
+colors, typography, and layout). Then surround it with token annotation callouts.
+
+ANNOTATION STYLE:
+- Label boxes: dark navy background (#0F172A), light text (#F8FAFC), 1px border (#334155), 6px radius
+- Callout lines: thin amber lines (#F59E0B) connecting labels to UI elements
+- Color swatches: small 14x14px filled squares showing the actual color inline with label
+- Spacing arrows: thin double-headed arrows (#38BDF8) with px measurements
+
+[LEFT SIDE — Spacing & Layout]
+Annotate spacing values with double-headed arrows:
+- {spacing values and measurements extracted in Phase 4a}
+
+[RIGHT SIDE — Typography & Colors]
+TYPOGRAPHY group (top right):
+- {typography values extracted in Phase 4a — font-family, size, weight for each text style}
+
+COLOR group (middle right):
+- {color values with filled swatches — each entry shows the swatch + hex + token name}
+
+BORDER RADIUS group (bottom right):
+- {radius values per component}
+
+SHADOWS group (below the UI if present):
+- {shadow specs if any}
+
+OUTPUT: Wide format 1600x1000px, white background, UI centered vertically and horizontally,
+professional Figma-style handoff sheet aesthetic.' \
+  resolution=2K \
+  use_thinking=true \
+  number_of_images=1
+```
+
+**Key:** Populate the bracketed sections with the actual extracted values from Phase 4a. The more specific the prompt, the more accurate the overlay.
+
+### Phase 4d: Verify the Overlay
+
+Verify the overlay is legible and accurate before proceeding:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=analyze \
+  image_path=ui-studio/blueprints/{screen-name}/token-overlay.png \
+  'prompt=Evaluate this design specification annotation sheet:
+1. Is the UI faithfully reproduced in the center?
+2. Are the token annotations legible (label text, callout lines, color swatches)?
+3. Are there any obvious inaccuracies (wrong colors, misidentified fonts, empty swatches)?
+4. Does the layout clearly separate spacing (left), typography (top-right), colors (mid-right), and radius/shadows (bottom-right)?
+
+Report any issues found.'
+```
+
+If the verification identifies inaccuracies (e.g., empty color swatches, wrong font rendering), note them in the tokens.json as comments and proceed — the overlay is a visual aid, not a blocker. The tokens.json values are the authoritative record.
+
+**Output:** `ui-studio/blueprints/{screen-name}/token-overlay.png`
 
 ## Step 5: Asset Inventory
 
@@ -288,6 +379,7 @@ Files written to ui-studio/blueprints/{screen-name}/:
   - containment-overlay.png — visual proof of 100% pixel coverage
   - component-spec.md — {N} components extracted
   - tokens.json — {N} colors, {N} typography, {N} spacing, {N} border-radius tokens
+  - token-overlay.png — redline handoff sheet with all tokens annotated
   - assets.md — {N} icons, {N} images, {N} backgrounds
 
 All pixels covered. All visual elements accounted for.
