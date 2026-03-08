@@ -139,9 +139,9 @@ Format:
 Generated storyboard: ui-studio/storyboards/storyboard_v{n}.png
 
 ## Screen Inventory
-1. [ScreenName] — [one-line purpose]
-2. [ScreenName] — [one-line purpose]
-3. [ScreenName] — [one-line purpose]
+1. [ScreenName] — [one-line purpose] [route]
+2. [ScreenName] — [one-line purpose] [route]
+3. [ScreenName] — [one-line purpose] [overlay → ParentScreen]
 ...
 
 ## Transitions
@@ -149,6 +149,10 @@ Generated storyboard: ui-studio/storyboards/storyboard_v{n}.png
 - [ScreenA] → [ScreenC]: [triggering action]
 ...
 ```
+
+Classify each screen as `[route]` or `[overlay → ParentScreen]`:
+- **route** — full-screen view, navigated to directly, occupies the entire content area
+- **overlay** — modal/sheet/drawer rendered on top of a parent screen; when in doubt, default to `[route]` (the human can reclassify)
 
 Then ask: **"How does this flow feel? Any screens to add, remove, or restructure?"**
 
@@ -193,22 +197,55 @@ When the human approves the storyboard:
    ```
 
 2. **Save the screen inventory:**
-   Write the inventory to `ui-studio/storyboards/screen_inventory.md`
+   Write `ui-studio/storyboards/screen_inventory.md` with the classified inventory.
 
-3. **Output the final screen inventory and handoff message:**
+3. **Derive the state chart** from the approved storyboard + all transitions recorded during iteration.
+
+   Produce `statechart.md` with three sections:
+
+   **Section 1 — Mermaid diagram** (`stateDiagram-v2`):
+   - Every screen is a state; every transition is a labeled arrow using `snake_case` event names
+   - `[*]` is the entry point; `[*]` as a target marks app-exit flows
+   - Use `direction LR` for readability
+
+   **Section 2 — Screen Classification table:**
+   | Screen | Type | Parent Route | Notes |
+   |--------|------|--------------|-------|
+   - `Type` is exactly `route` or `overlay` — nothing else
+   - `Parent Route` is `—` for root-level routes; the parent screen name for nested routes and overlays
+   - Classification rule: full-screen navigable view → `route`; modal/sheet/drawer/dialog → `overlay`; when ambiguous → `route`
+
+   **Section 3 — Transitions table:**
+   | From | To | Event | Transition Type |
+   |------|----|-------|----------------|
+   - `Transition Type` is one of: `initial`, `tab`, `push`, `pop`, `navigate`, `overlay`, `dismiss`
+   - `initial` — app entry. `tab` — persistent nav switch. `push`/`pop` — stack nav. `navigate` — replace stack. `overlay`/`dismiss` — open/close a modal without route change.
+
+4. **Present the state chart for human review** before saving:
+
+   > *"Here's the state chart I derived from the storyboard — does this capture the flow correctly? Any corrections before I save?"*
+   >
+   > [Mermaid diagram + classification table]
+
+   Wait for confirmation. Apply any corrections, then save `ui-studio/storyboards/statechart.md`.
+
+5. **Output the completion summary:**
 
    ```
    ## Screen Inventory
-   1. [ScreenName] — [one-line purpose]
-   2. [ScreenName] — [one-line purpose]
-   3. [ScreenName] — [one-line purpose]
+   1. [ScreenName] — [one-line purpose] [route]
+   2. [ScreenName] — [one-line purpose] [overlay → Parent]
    ...
-   Saved: ui-studio/storyboards/storyboard_final.png
+
+   Saved:
+     ui-studio/storyboards/storyboard_final.png
+     ui-studio/storyboards/screen_inventory.md
+     ui-studio/storyboards/statechart.md
    ```
 
-4. **Suggest handoff:**
+6. **Suggest handoff:**
 
-   > **Storyboard complete — [N] screens: [Screen1], [Screen2], [Screen3], ... Which screen do you want to refine first? Type `/frame` and name the screen.**
+   > **Storyboard complete — [N] screens ([R] routes, [O] overlays). State chart saved. Which screen do you want to refine first? Type `/frame` and name the screen.**
 
 ---
 
