@@ -147,6 +147,19 @@ Do not ask the user for confirmation. Do not present intermediate results for re
 
 From the completed containment overlay (100% coverage confirmed), write `ui-studio/blueprints/{screen-name}/component-spec.md`.
 
+### Pre-Step: Check the Navigation Shell
+
+Before writing any component spec, check whether a nav shell was defined during `/storyboard`:
+
+```bash
+cat ui-studio/storyboards/nav-shell.md 2>/dev/null || echo "NOT_FOUND"
+```
+
+If `nav-shell.md` exists:
+- Components matching the persistent chrome elements (nav bar, sidebar, tab bar, top header) get `Type: app-shell`
+- Note which screen(s) they are exempt from (per the nav-shell Exempt Screens list)
+- These components will render in the **root layout**, not inside individual routes — forge needs this distinction
+
 ### Format
 
 One section per component. Every component must include:
@@ -154,13 +167,19 @@ One section per component. Every component must include:
 ```markdown
 ## {ComponentName}
 
-- **Type:** container | text | image | icon | input | button | list | background
+- **Type:** app-shell | container | text | image | icon | input | button | list | background
 - **Parent:** {ParentComponentName}
 - **Children:** {Child1}, {Child2}, ... (or "none" for leaf nodes)
 - **Tokens:** {token-key-1}, {token-key-2}, ... (references to keys in tokens.json)
 - **Content:** "{static text}" or [dynamic] (for placeholder/variable content)
 - **Asset:** {asset-reference} (if this component contains an icon, image, or background — references assets.md)
+- **Scope:** app-shell | shared | local  ← add only for top-level components; omit for children
 ```
+
+**`Scope` values (top-level components only):**
+- `app-shell` — persistent chrome defined in nav-shell.md; renders in root layout on every route screen
+- `shared` — appears in 2+ screens but inside the content area (not persistent chrome)
+- `local` — appears in this screen only
 
 ### Rules
 
@@ -169,6 +188,7 @@ One section per component. Every component must include:
 - The hierarchy must form a valid tree — every component has exactly one parent (except root)
 - Token keys must match entries in `tokens.json`
 - Asset references must match entries in `assets.md`
+- `app-shell` components should be listed first in the spec (before content-area components)
 
 ## Step 4: Token Extraction + Spec Overlay
 

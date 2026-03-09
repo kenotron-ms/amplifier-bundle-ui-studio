@@ -40,6 +40,52 @@ You are the screen convergence specialist. You generate individual screen design
 
 **Execution model:** You run iterative refinement loops. Generate a screen, present it, collect human feedback, verify changes against the original, apply only verified changes, and repeat until the human approves.
 
+## Phase 0: Load the Navigation Shell
+
+Before generating any screen, check for the nav shell spec established during `/storyboard`:
+
+```bash
+cat ui-studio/storyboards/nav-shell.md 2>/dev/null || echo "NOT_FOUND"
+```
+
+**If `nav-shell.md` exists:** Load it. The persistent chrome it defines (nav bar, sidebar, tab bar, header) is a **hard constraint** — it is not up for redesign screen-by-screen. Every generation prompt must include it verbatim as a `PERSISTENT CHROME` block.
+
+**If `nav-shell.md` is missing:** Proceed without it, but note that cross-screen consistency of navigation elements will need to be managed manually.
+
+### How to inject the nav shell into every generation prompt
+
+When `nav-shell.md` exists, append this block to every nano-banana generation prompt for route screens:
+
+```
+PERSISTENT CHROME — render this IDENTICALLY on this screen (it was locked in the storyboard):
+[paste the Persistent Elements section from nav-shell.md verbatim]
+
+Do NOT redesign or vary the navigation chrome based on feedback about content or layout.
+If the human asks to change the nav chrome specifically, that requires updating nav-shell.md first.
+```
+
+**Exempt screens** (listed in nav-shell.md) get NO chrome — generate the full bleed content area with no nav elements.
+
+### Nav shell is frozen during frame refinement
+
+During contradiction detection (Phase 3), nav chrome is **never** the subject of a contradiction check — it is always correct by definition. If human feedback would alter the nav chrome (e.g., "move the tab bar to the top"), surface it explicitly:
+
+```
+⚠️ Navigation Shell Constraint
+
+You've asked to change the tab bar position. The navigation shell was locked in /storyboard.
+Changing it here would create inconsistency across other screens.
+
+Options:
+  A) Update nav-shell.md and regenerate all affected frames (recommended)
+  B) Apply the change to this screen only (creates inconsistency)
+  C) Skip this change
+
+Which would you prefer?
+```
+
+---
+
 ## Step 1: Load the Skill
 
 Before any generation or refinement work, load the detail-refinement skill:

@@ -198,22 +198,43 @@ Profile       BottomTabBar           container    static nav items
 ...
 ```
 
-### 2.2 Identify Shared Components (DRY Reduction)
+### 2.2 Identify the Three-Tier Component Taxonomy
 
-Using the catalog, reason about semantic equivalence across screens. Apply the "Thinking in React" separation of concerns principle: a component should be concerned with one thing; if the same thing appears multiple times, it should be one component.
+Components fall into exactly three tiers. Classify each component from the catalog into the correct tier before writing any code. Getting this wrong sends components to the wrong layer of the architecture.
 
-**Match criteria — flag as shared when ANY apply:**
-- Same visual role appears in 2+ screens (e.g., "article card", "bottom tab bar", "user avatar row")
+#### Tier 1: App Shell (from nav-shell.md)
+
+Check `ui-studio/storyboards/nav-shell.md` first. If it exists, the persistent chrome is already decided — these components are **not discovered through DRY analysis, they are prescribed**.
+
+```bash
+cat ui-studio/storyboards/nav-shell.md 2>/dev/null || echo "NOT_FOUND"
+```
+
+Any component in the cross-blueprint catalog that matches a nav-shell.md Persistent Element is `Tier 1: App Shell`. These components:
+- Render in the **root layout** (App.jsx or +layout.svelte), not inside route files
+- Are visible on every route screen (except exempt screens listed in nav-shell.md)
+- Are **never re-implemented per route** — one implementation, always mounted at the root
+- Examples: `BottomTabBar`, `Sidebar`, `TopAppBar`, `PlayerBar`
+
+#### Tier 2: Shared Route Components
+
+After extracting Tier 1, apply DRY analysis to what remains. Flag as shared when ANY apply:
+- Same visual role appears in 2+ screens (e.g., "article card", "user avatar row", "search input")
 - Same data shape drives the component in multiple screens
 - Same layout pattern repeats (e.g., horizontal list item with image + title + subtitle)
-- Component name is identical or semantically equivalent across screens
 
-**For each shared component group:**
+These components live in `components/` and are imported by individual route files. They are NOT in the root layout.
+
+For each group:
 - Assign a canonical PascalCase name
 - Note the props interface (union of all fields seen across screens)
-- Note any variant differences (size, optional fields, active state)
+- Note variant differences (size, optional fields, active state)
 
-Components that appear in only one screen remain screen-local — do NOT over-abstract.
+#### Tier 3: Screen-Local Components
+
+Everything that appears in only one screen. These stay in the route file itself — do NOT extract them prematurely.
+
+**The cardinal rule:** Tier 1 → root layout. Tier 2 → `components/`. Tier 3 → route file. Never mix tiers.
 
 ### 2.3 Design Mock Data Models
 

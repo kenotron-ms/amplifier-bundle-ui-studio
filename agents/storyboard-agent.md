@@ -49,7 +49,110 @@ load_skill('storyboard')
 
 This skill contains the complete methodology — prompt structure, worked examples, transition formats, fidelity levels, and output conventions. Follow it.
 
-## Step 2: Generate All Screens Simultaneously
+## Step 2: Define the Navigation Shell
+
+**Before drawing a single screen, lock the persistent chrome.** Navigation patterns designed screen-by-screen drift — each frame subtly reinvents the nav bar, sidebar, or header. The result is incoherence that is expensive to fix retroactively. This step eliminates that problem at the source.
+
+### 2.1 Derive the Navigation Model
+
+From the app brief and screen list, reason about the navigation pattern. Ask:
+
+- How many top-level destinations are there? (2–5 → tab bar; 6+ → drawer or sidebar)
+- What is the device target? (mobile → bottom tabs or top nav; desktop/tablet → sidebar)
+- Is there persistent content the user should always see? (player bar, cart, notification area)
+- Which screens break the pattern? (onboarding, splash, fullscreen media — these get NO chrome)
+
+Choose exactly one primary navigation model:
+
+| Model | When to Use |
+|-------|-------------|
+| `bottom-tabs` | Mobile, 2–5 top-level destinations |
+| `top-nav` | Mobile with linear flow, or desktop with few sections |
+| `sidebar` | Desktop/tablet, 5+ destinations, or content-heavy apps |
+| `drawer` | Mobile with many destinations (hamburger reveals) |
+| `hybrid` | Sidebar on desktop, bottom tabs on mobile (responsive) |
+| `none` | Single-flow apps (onboarding, checkout, utility) |
+
+### 2.2 Specify Every Persistent Element
+
+For each element that appears on route screens, specify it precisely enough that nano-banana will render it identically on every screen:
+
+```
+BOTTOM TAB BAR (example):
+- Position: fixed bottom, full width, above home indicator
+- Height: 56px
+- Items: [Tab1 (icon: description), Tab2 (icon: description), ...]
+- Active state: icon + label in accent color; inactive: muted color
+- Background: [hex or description]
+- Border: [top border if any]
+
+TOP APP BAR (example):
+- Position: fixed top, full width
+- Height: 48–56px
+- Left: [back arrow / logo / hamburger]
+- Center: [title / logo]
+- Right: [icon actions]
+- Background: [hex or transparent]
+```
+
+### 2.3 Write `nav-shell.md`
+
+Save the spec as `ui-studio/storyboards/nav-shell.md` **before generating any screens**:
+
+```markdown
+# Navigation Shell
+
+## Navigation Model
+{bottom-tabs | top-nav | sidebar | drawer | hybrid | none}
+
+## Route Screens (chrome applies)
+{list every route screen name}
+
+## Exempt Screens (no chrome)
+{list any fullscreen screens: onboarding, splash, player, etc.}
+
+## Persistent Elements
+
+### {Element Name}
+- **Position:** {fixed bottom | fixed top | fixed left | etc.}
+- **Dimensions:** full-width × {N}px {or N}px wide × full-height
+- **Items / Content:** {precise description of every item, icon, label}
+- **Active State:** {how selected item looks}
+- **Inactive State:** {how unselected items look}
+- **Background:** {color or material}
+- **Border / Separator:** {if any}
+
+### {Element Name} (add more elements as needed)
+...
+```
+
+### 2.4 Confirm with the Human
+
+Present the nav shell before generating any screens:
+
+```
+Here's the navigation shell I've derived for this app:
+
+**Model:** {model}
+**Persistent on:** {N} route screens
+**Exempt:** {list} (fullscreen — no chrome)
+
+**{Element Name}**
+{key spec lines}
+
+**{Element Name}**
+{key spec lines}
+
+Does this match your vision for the navigation, or should we adjust anything before generating the screens?
+```
+
+**Wait for confirmation.** A quick "looks good" is fine. Any adjustment → update `nav-shell.md` → re-confirm → proceed.
+
+This is the cheapest moment to change the navigation model. After screens are generated, changes cascade.
+
+---
+
+## Step 3: Generate All Screens Simultaneously
 
 **Core principle: ALL screens in ONE nano-banana call.** Never generate screens one at a time — simultaneous generation enforces visual consistency across the entire flow.
 
@@ -66,10 +169,13 @@ If `collage.png` exists, pass it as `reference_image_path` — nano-banana will 
 Construct the nano-banana prompt following the skill's prompt structure:
 
 1. **Visual style declaration** — once, applies to all screens (pull from `aesthetic-brief.md` if available, otherwise from the user's brief)
-2. **Complete screen list** — all names upfront
-3. **User journey narrative** — flow between screens
-4. **Per-screen descriptions** — content and purpose of each
-5. **Layout and labeling instructions** — grid arrangement, screen labels, transition arrows
+2. **Persistent chrome declaration** — from `nav-shell.md` (confirmed in Step 2), injected as a hard constraint
+3. **Complete screen list** — all names upfront
+4. **User journey narrative** — flow between screens
+5. **Per-screen descriptions** — content and purpose of each
+6. **Layout and labeling instructions** — grid arrangement, screen labels, transition arrows
+
+**The persistent chrome block must appear in every prompt.** It is what enforces visual consistency across all simultaneously-generated screens. Without it, each screen gets its own interpretation of the nav bar.
 
 Invoke nano-banana — **with collage as reference if available:**
 
@@ -86,6 +192,10 @@ Generate a complete multi-screen UX storyboard for [app description].
 VISUAL STYLE (applies to ALL screens):
 [aesthetic direction from aesthetic-brief.md or user brief]
 
+PERSISTENT CHROME — render this IDENTICALLY on every route screen. Do NOT vary it between screens. This is the navigation shell:
+[paste the full contents of nav-shell.md Persistent Elements section here]
+Screens exempt from chrome: [list from nav-shell.md Exempt Screens]
+
 SCREENS (generate ALL of these together in one image):
 1. [ScreenName]
 2. [ScreenName]
@@ -95,8 +205,8 @@ USER JOURNEY:
 [narrative flow between screens]
 
 SCREEN DESCRIPTIONS:
-1. [ScreenName] — [content and layout for this screen]
-2. [ScreenName] — [content and layout for this screen]
+1. [ScreenName] — [content and layout for this screen; chrome is fixed — only describe the content area]
+2. [ScreenName] — [content and layout for this screen; chrome is fixed — only describe the content area]
 ...
 
 OUTPUT LAYOUT:
@@ -121,6 +231,10 @@ amplifier tool invoke nano-banana \
 VISUAL STYLE (applies to ALL screens):
 [aesthetic direction from brief]
 
+PERSISTENT CHROME — render this IDENTICALLY on every route screen. Do NOT vary it between screens:
+[paste the full contents of nav-shell.md Persistent Elements section here]
+Screens exempt from chrome: [list from nav-shell.md Exempt Screens]
+
 SCREENS (generate ALL of these together in one image):
 1. [ScreenName]
 2. [ScreenName]
@@ -130,8 +244,8 @@ USER JOURNEY:
 [narrative flow between screens]
 
 SCREEN DESCRIPTIONS:
-1. [ScreenName] — [content and layout for this screen]
-2. [ScreenName] — [content and layout for this screen]
+1. [ScreenName] — [content and layout for this screen; chrome is fixed — only describe the content area]
+2. [ScreenName] — [content and layout for this screen; chrome is fixed — only describe the content area]
 ...
 
 OUTPUT LAYOUT:
@@ -165,14 +279,16 @@ amplifier tool invoke nano-banana \
   'prompt=TAKE THIS STORYBOARD and make these changes:
   - [specific change from human feedback]
   - [specific change from human feedback]
-  Keep everything else the same.' \
+  Keep everything else the same.
+
+IMPORTANT — DO NOT CHANGE: The navigation chrome (nav bar, sidebar, tab bar, header) is locked by the nav shell spec. Do not alter its position, dimensions, items, colors, or active states between versions unless the human explicitly asks to change the navigation model.' \
   aspect_ratio=16:9 \
   resolution=2K \
   use_thinking=true \
   number_of_images=1
 ```
 
-## Step 3: Present Results
+## Step 4: Present Results
 
 After generation, present:
 
@@ -203,7 +319,7 @@ Classify each screen as `[route]` or `[overlay → ParentScreen]`:
 
 Then ask: **"How does this flow feel? Any screens to add, remove, or restructure?"**
 
-## Step 4: Interpret Human Feedback
+## Step 5: Interpret Human Feedback
 
 Map vague or directional feedback to concrete prompt changes:
 
@@ -221,7 +337,7 @@ Map vague or directional feedback to concrete prompt changes:
 
 When feedback is ambiguous, ask ONE clarifying question before regenerating. Do not guess.
 
-## Step 5: Iteration Loop
+## Step 6: Iteration Loop
 
 ```
 generate → present → await feedback
@@ -234,7 +350,7 @@ generate → present → await feedback
 
 **Refinement signals:** Any request for changes to screens, flow, style, or structure.
 
-## Step 6: Completion
+## Step 7: Completion
 
 When the human approves the storyboard:
 
@@ -303,6 +419,7 @@ When the human approves the storyboard:
    ...
 
    Saved:
+     ui-studio/storyboards/nav-shell.md
      ui-studio/storyboards/storyboard_final.png
      ui-studio/storyboards/screen_inventory.md
      ui-studio/storyboards/statechart.md
