@@ -236,6 +236,100 @@ Everything that appears in only one screen. These stay in the route file itself 
 
 **The cardinal rule:** Tier 1 → root layout. Tier 2 → `components/`. Tier 3 → route file. Never mix tiers.
 
+### 2.2.1 Canonical Component Vocabulary
+
+Use this vocabulary when naming and classifying shared components. Synthesized from 6 major free component libraries (shadcn/ui, Radix UI, MUI, Ant Design, Chakra UI, DaisyUI) — these are the ~30 component concepts that appear in every one of them. They represent the agreed-upon primitive vocabulary of modern UI.
+
+When a blueprint component matches a canonical name, **use that name**. When it doesn't, reason about which canonicals it is composed from — that reveals its data shape and token requirements.
+
+#### Navigation (strong Tier 1 / App Shell candidates)
+| Component | Also called | Typical Tier |
+|-----------|-------------|-------------|
+| Bottom Tab Bar | Bottom Navigation, Dock | Tier 1 — root layout |
+| Top App Bar | Navbar, Header, App Bar | Tier 1 — root layout |
+| Sidebar | Navigation Menu, Drawer (nav) | Tier 1 — root layout |
+| Breadcrumb | Breadcrumbs | Tier 2 — route level |
+| Tabs | Tab Bar (in-page) | Tier 2 — route level |
+| Pagination | — | Tier 2 — route level |
+| Stepper | Steps | Tier 2 — route level |
+| Menu | Dropdown Menu, Context Menu | Tier 3 — local |
+
+#### Data Display (strong Tier 2 / Shared candidates)
+| Component | Also called | Typical Composition |
+|-----------|-------------|---------------------|
+| Card | Paper | Image + Typography + Badge |
+| Avatar | User Image | Image with fallback + initials |
+| Badge | Tag, Chip, Label | Typography + color fill |
+| List Item | Row | Avatar + Typography + (Badge) |
+| Table | Data Table | Grid of Typography cells |
+| Typography | Text, Heading | — (primitive) |
+| Image | — | — (primitive) |
+| Stat | Statistic | Large Typography + small label |
+| Timeline | — | Icon + Typography + connector |
+| Carousel | Slider (content) | Scroll container + Cards |
+| Accordion | Collapse | Trigger + collapsible body |
+| Empty State | Empty | Icon + Typography + Button |
+
+#### Forms & Data Entry (Tier 2 or Tier 3 depending on reuse)
+| Component | Also called |
+|-----------|-------------|
+| Button | Icon Button, FAB |
+| Input | Text Field, Search Bar |
+| Textarea | Multi-line Input |
+| Checkbox | — |
+| Radio | Radio Group |
+| Select | Dropdown, Combobox |
+| Switch | Toggle |
+| Slider | Range |
+| Date Picker | Calendar |
+| File Upload | — |
+| Rating | Rate (stars) |
+
+#### Feedback (usually Tier 3 — appear in specific screens)
+| Component | Also called |
+|-----------|-------------|
+| Alert | Inline Message, Banner |
+| Toast | Snackbar, Notification |
+| Progress | Progress Bar, Progress Circle |
+| Skeleton | Loading Placeholder |
+| Spinner | Loading Indicator, Activity |
+| Dialog | Modal |
+
+#### Overlays (usually Tier 3 — triggered contextually)
+| Component | Also called |
+|-----------|-------------|
+| Tooltip | Hint |
+| Popover | Hover Card, Floating Card |
+| Drawer | Sheet, Side Panel, Bottom Sheet |
+
+#### Layout (infrastructure — rarely named components in blueprints)
+| Component | Also called |
+|-----------|-------------|
+| Container | Box, Wrapper |
+| Stack | Flex, VStack, HStack |
+| Grid | — |
+| Divider | Separator |
+| Scroll Area | Scroll Container |
+
+---
+
+#### App Components Are Compositions of Canonicals
+
+Most components extracted from blueprints are NOT new inventions — they are compositions of canonical primitives with app-specific content. Recognizing the composition reveals the props interface and which tokens apply:
+
+| App Component | Canonical Composition | Key Props |
+|---------------|----------------------|-----------|
+| `ArticleCard` | Card + Image + Typography (×2) + Badge | title, subtitle, thumbnail, category, readTime |
+| `UserProfileRow` | Avatar + Typography (×2) + Button | name, handle, avatar, isFollowing |
+| `SearchBar` | Input + Icon (search) + Icon Button (clear) | value, onChange, placeholder |
+| `NotificationItem` | Avatar + Typography (×2) + Badge + Typography (time) | actor, action, timestamp, isRead |
+| `ProductItem` | Card + Image + Typography (name, price) + Button | name, price, image, onAddToCart |
+| `SectionHeader` | Typography (title) + Button (action) | title, action?, onAction? |
+| `StatCard` | Card + Stat + Typography | label, value, change?, icon? |
+| `NavItem` | Icon + Typography + (Badge for count) | icon, label, href, count?, isActive |
+
+**The DRY reduction is identifying which app components map to the same canonical composition.** `ArticleCard` and `ProductItem` both use `Card + Image + Typography + Button` — they may be the same shared component with different props, or variant props of one component.
+
 ### 2.3 Design Mock Data Models
 
 For each shared component that renders variable/dynamic content (cards, lists, rows, profile blocks — NOT static nav or decorative elements):
