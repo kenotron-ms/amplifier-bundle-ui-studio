@@ -157,25 +157,43 @@ Save the full text output of this analysis. It becomes `{screen_description}` in
 
 #### Step B: Choose the style reference image
 
-The `reference_image_path` for generation is **not always the storyboard**. Use this priority order:
+The `reference_image_path` for generation determines component consistency across all frames. Use this priority order:
 
 ```bash
-# Check for already-approved frames (highest fidelity style reference):
+# 1. Check for the component library (best: shows all components at full fidelity):
+ls ui-studio/storyboards/component-library.png 2>/dev/null
+
+# 2. Check for already-approved frames (fallback when no library yet):
 ls ui-studio/frames/*/approved.png 2>/dev/null
 
-# Check for style-seed.md (locked design tokens from storyboard):
-cat ui-studio/storyboards/style-seed.md 2>/dev/null
+# 3. Fall back to storyboard (last resort):
+ls ui-studio/storyboards/storyboard_final.png 2>/dev/null
 ```
 
 | Situation | Use as `reference_image_path` | Why |
 |-----------|-------------------------------|-----|
-| **First frame ever** | `storyboard_final.png` | Nothing else exists yet |
-| **Subsequent frames** | Most visually similar `approved.png` | Full-res, human-validated, exact colors |
-| **No storyboard or approved frames** | omit | Generate from description only |
+| **Component library exists** | `component-library.png` | Shows every component at exact fidelity — the model sees what each piece looks like and uses it as-is |
+| **No library, approved frames exist** | Most visually similar `approved.png` | Full-res, human-validated, exact design decisions |
+| **First frame, no library** | `storyboard_final.png` | Last resort — storyboard thumbnail for overall style |
+| **Nothing exists** | omit | Generate from description only |
 
-**Why approved frames beat the storyboard as a style reference:** The storyboard is a multi-screen thumbnail — each panel is tiny, colors are approximate, detail is minimal. An approved frame is 2K resolution, already validated by you, and contains every exact design decision at full fidelity. When nano-banana sees an approved frame as the reference image, it has concrete ground truth to match — not a thumbnail to interpret.
+**Why the component library wins:** It was purpose-built as a visual reference — isolated components at exact spec, labeled, at mobile scale. The model doesn't have to extract a component from a thumbnail scene or a full rendered screen. It sees `ArticleCard` clean on a neutral background and simply replicates it in context. This is what eliminates per-frame drift — every frame draws from the same visual source for every component.
 
-Pick the most visually similar approved frame (e.g., for a Detail screen, use the approved Home screen if it has the same card style; for a Settings screen, use any approved route screen that shows the nav chrome).
+If the component library needs to be more accurate (e.g., it was generated from the low-fidelity storyboard before any frames existed), **regenerate it from the first approved frame** after that frame is complete:
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=generate \
+  reference_image_path=ui-studio/frames/{first-approved-screen}/approved.png \
+  output_path=ui-studio/storyboards/component-library.png \
+  'prompt=You can SEE an approved full-resolution screen design in the reference image.
+Extract and render every reusable component visible in this screen as isolated specimens
+on a clean background — exactly as described in the original component library generation step.
+Use this approved frame as the definitive style source (it supersedes the storyboard).' \
+  aspect_ratio=16:9 resolution=2K use_thinking=true number_of_images=1
+```
+
+This upgrades the library from storyboard-fidelity to approved-frame-fidelity, and all subsequent frames benefit.
 
 #### Step C: Generate with style reference + locked tokens + screen spec
 

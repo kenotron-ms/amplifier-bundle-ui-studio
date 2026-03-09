@@ -510,7 +510,56 @@ When the human approves the storyboard:
 
    Frame agents embed these values as hard constraints in every generation prompt. Colors do not drift because they are not inferred — they are specified.
 
-6. **Output the completion summary:**
+6. **Generate the component library image** — this step runs automatically after the style seed is written.
+
+   This is the key consistency anchor for all frame generation. Rather than each frame generation inferring components from a thumbnail storyboard, every frame will use this image as `reference_image_path` — the model *sees* the exact components at full fidelity and uses them as-is.
+
+   From the storyboard, identify the shared components that appear across multiple screens. Include nav shell elements from `nav-shell.md` plus any repeated content components visible in the storyboard (cards, list items, headers, etc.).
+
+   ```bash
+   amplifier tool invoke nano-banana \
+     operation=generate \
+     reference_image_path=ui-studio/storyboards/storyboard_final.png \
+     output_path=ui-studio/storyboards/component-library.png \
+     'prompt=You can SEE the full multi-screen storyboard in the reference image. Your task: create a COMPONENT LIBRARY REFERENCE SHEET for this app.
+
+   Extract every reusable UI component visible across the screens and render each one as a clean, isolated, full-fidelity specimen. This sheet will be used as the definitive visual reference when generating every individual screen — so the accuracy and fidelity of each component specimen here directly determines the consistency of the entire app.
+
+   COMPONENTS TO INCLUDE (extract from what you see in the storyboard):
+   [Nav shell elements from nav-shell.md — tab bar, header, etc.]
+   [Shared content components visible across screens — cards, list items, section headers, buttons, avatars, badges, etc.]
+   [Any form elements, feedback states, overlays visible in the storyboard]
+
+   LOCKED STYLE (apply these exact values to all components):
+   [paste full style-seed.md contents here]
+
+   LAYOUT RULES:
+   - Background: neutral (match the app background color from style-seed)
+   - Arrange components in a clean grid — each component in its own labeled cell
+   - Label each component below it in small monospace text (e.g. "ArticleCard", "BottomTabBar", "SectionHeader")
+   - Show meaningful states where applicable: active/inactive tabs, filled/empty inputs, default/hover buttons
+   - Render at true mobile scale — components should look exactly as they would inside a 390px wide screen
+   - Generous spacing between cells so each component reads cleanly in isolation
+
+   FIDELITY REQUIREMENT:
+   Every color must exactly match the style-seed values above.
+   Every type size and weight must match the style-seed typography.
+   Every corner radius and spacing must match the style-seed spacing.
+   This is not an approximation — it is the specification.' \
+     aspect_ratio=16:9 \
+     resolution=2K \
+     use_thinking=true \
+     number_of_images=1
+   ```
+
+   **Save at:** `ui-studio/storyboards/component-library.png`
+
+   Present the generated sheet to the human:
+   > "Here's the component library extracted from your storyboard. These are the building blocks that will be used as the visual reference for every screen. Does this look right? Any components missing or that need adjustment?"
+
+   Wait for confirmation. If adjustments are needed, regenerate with corrected component list or style notes. Once approved, this image is **locked** — it does not change during frame generation.
+
+7. **Output the completion summary:**
 
    ```
    ## Screen Inventory
@@ -523,12 +572,13 @@ When the human approves the storyboard:
      ui-studio/storyboards/storyboard_final.png
      ui-studio/storyboards/screen_inventory.md
      ui-studio/storyboards/statechart.md
-     ui-studio/storyboards/style-seed.md    ← design token ground truth for all frames
+     ui-studio/storyboards/style-seed.md         ← design token ground truth
+     ui-studio/storyboards/component-library.png ← visual reference for all frames
    ```
 
-7. **Suggest handoff:**
+8. **Suggest handoff:**
 
-   > **Storyboard complete — [N] screens ([R] routes, [O] overlays). Style seed extracted. Which screen do you want to refine first? Type `/frame` and name the screen.**
+   > **Storyboard complete — [N] screens ([R] routes, [O] overlays). Component library locked. Type `/frame` and name the screen to start.**
 
 ---
 
