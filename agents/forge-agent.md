@@ -218,23 +218,56 @@ Any component in the cross-blueprint catalog that matches a nav-shell.md Persist
 
 #### Tier 2: Shared Route Components
 
-After extracting Tier 1, apply DRY analysis to what remains. Flag as shared when ANY apply:
-- Same visual role appears in 2+ screens (e.g., "article card", "user avatar row", "search input")
-- Same data shape drives the component in multiple screens
-- Same layout pattern repeats (e.g., horizontal list item with image + title + subtitle)
+Apply DRY analysis at **three semantic levels** in order. The `visual-design-principles` skill (Section 7) defines what each level means — consult it when classifying.
 
-These components live in `components/` and are imported by individual route files. They are NOT in the root layout.
+**Level 1 — Primitives (pass through, don't extract)**
+Primitives (Icon, Typography, Image, Divider) are not components to extract — they are standardized via design tokens. But flag any primitive that appears *inconsistently styled* across organisms. Inconsistency here = a broken token, not a missing component. Fix the token; don't create wrapper components.
 
-For each group:
-- Assign a canonical PascalCase name
-- Note the props interface (union of all fields seen across screens)
-- Note variant differences (size, optional fields, active state)
+**Level 2 — Compounds / Molecules (extract if shared)**
+Compounds are 2–4 primitives serving one named purpose: `NavItem`, `Tag`, `SearchBar`, `StatRow`, `ListItem`, `SectionHeader`. If the same compound composition appears inside multiple organisms across multiple screens, extract it to `components/`.
+
+```
+Flag as a shared compound when:
+  - Same semantic purpose appears in 2+ organisms across 2+ screens
+  - Composition (which primitives, what arrangement) is identical or near-identical
+  - A name exists for this pattern in the canonical vocabulary
+
+Examples:
+  SectionHeader (Typography + Button) appears in HomeScreen organism AND ProfileScreen organism
+  → Extract SectionHeader to components/SectionHeader.jsx
+  → Both organisms import it
+
+  Tag/Chip appears in ArticleCard AND SearchResultItem
+  → Extract Tag to components/Tag.jsx
+```
+
+**Level 3 — Components / Organisms (extract if shared)**
+Organisms are complex, self-contained blocks with their own data shape: `ArticleCard`, `UserProfileRow`, `StatCard`. If the same organism appears on 2+ screens (possibly under different names — look at the data shape, not just the name), extract it.
+
+```
+Flag as a shared organism when:
+  - Same data shape ({ id, title, thumbnail, category }) drives 2+ instances across 2+ screens
+  - Visual composition is the same or admits props-driven variants
+  - The entity it represents is the same domain concept (an "article" is an "article" everywhere)
+
+Name by domain concept, not by context:
+  "HomeArticle", "DiscoverArticle", "ProfileArticle" → all are ArticleCard
+  → One component: ArticleCard
+  → Props handle variants: size="compact" | "full"
+```
+
+For each extracted shared compound or organism:
+- Assign a canonical PascalCase name (use the canonical vocabulary in 2.2.1 when possible)
+- Write the props interface (union of all fields seen across instances)
+- Note named variants (`size`, `variant`, `isActive`) rather than creating separate components
 
 #### Tier 3: Screen-Local Components
 
-Everything that appears in only one screen. These stay in the route file itself — do NOT extract them prematurely.
+Anything that appears in only one screen — stays in the route file. Do NOT extract prematurely: a component that happens to look similar on two screens but represents different domain concepts should NOT be merged.
 
 **The cardinal rule:** Tier 1 → root layout. Tier 2 → `components/`. Tier 3 → route file. Never mix tiers.
+
+**The identity test:** Same data shape + same visual composition + same semantic meaning = same component. Any one of those differs = separate components (or props-driven variants, not forced unification).
 
 ### 2.2.1 Canonical Component Vocabulary
 

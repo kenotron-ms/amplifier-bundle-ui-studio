@@ -139,7 +139,126 @@ The brain groups elements automatically. Design with these groupings, not agains
 
 ---
 
-## 7. Screen Archetypes
+## 7. Semantic Component Levels
+
+Components have levels of abstraction. Thinking at the right level for the right job is what separates coherent systems from bags of unrelated pieces.
+
+There are four levels. Every UI element you see belongs to exactly one.
+
+---
+
+### Level 1 — Primitives (Atoms)
+
+The smallest meaningful piece. Cannot be broken down further without losing all semantic value.
+
+| Primitive | Semantic Meaning | Never confuse with |
+|-----------|-----------------|-------------------|
+| **Icon** | A single symbolic glyph conveying one meaning | Image (decorative/illustrative) |
+| **Typography** | A styled run of text with a specific role (heading, body, label, caption) | A component's content |
+| **Image** | A raster asset — photo, illustration, or generated graphic | Icon (SVG symbol) |
+| **Divider** | A visual separator between sections | Spacing (whitespace gap) |
+| **Color Swatch** | A filled area with semantic color meaning | Background (structural fill) |
+| **Loader / Spinner** | Animated "in progress" signal | Skeleton (content placeholder) |
+| **Skeleton** | Static placeholder matching the shape of loading content | Spinner |
+
+**Design rule for primitives:** Every primitive has one token set. Typography has a role (`font-size-h2`, `font-weight-semibold`, `color-text-primary`). Icons have one size rule and one color rule. You cannot have "big icon sometimes, small icon other times" for the same semantic purpose.
+
+---
+
+### Level 2 — Compounds (Molecules)
+
+Two to four primitives combined to serve **one clear, named purpose**. The name describes the purpose, not the composition.
+
+| Compound | Composed of | Semantic purpose |
+|----------|------------|-----------------|
+| **NavItem** | Icon + Typography (label) | A single navigable destination |
+| **Tag / Chip** | Typography + (Icon?) + background fill | A compact, discrete label |
+| **SearchBar** | Input + Icon (search) + IconButton (clear) | Text entry with search intent |
+| **StatRow** | Typography (value, large) + Typography (label, small) | A single metric with context |
+| **ListItem** | Avatar + Typography (primary) + Typography (secondary) | One identifiable entity in a list |
+| **IconButton** | Icon + interactive hit area | An action with only a glyph |
+| **LabeledField** | Label (Typography) + Input + HelperText (Typography) | A single form field with full context |
+| **SectionHeader** | Typography (title) + optional Button (action) | A titled block with optional CTA |
+| **BreadcrumbItem** | Typography + Icon (separator) | One step in a navigation path |
+
+**Design rule for compounds:** Every compound has exactly one visual treatment. A `NavItem` always looks the same — same icon size, same label size, same spacing. It does not vary unless there is a named variant (`NavItem--active`, `NavItem--compact`).
+
+---
+
+### Level 3 — Components (Organisms)
+
+A self-contained, reusable UI block that represents a **meaningful entity or action** in the product domain. Composed of multiple molecules and atoms. Has its own data shape.
+
+| Component | Composed of | Data it owns |
+|-----------|------------|-------------|
+| **ArticleCard** | Image + Typography (title) + Typography (subtitle) + Tag + Avatar | `{ id, title, subtitle, thumbnail, category, author, readTime }` |
+| **UserProfileRow** | Avatar + Typography (name) + Typography (handle/bio) + Button | `{ id, name, handle, avatar, isFollowing }` |
+| **SearchResultItem** | Thumbnail + Typography (title) + Typography (meta) + Tag | `{ id, title, meta, thumbnail, tag }` |
+| **StatCard** | Card surface + StatRow (×1–3) + Icon | `{ label, value, change?, icon? }` |
+| **NotificationItem** | Avatar + Typography (×2) + Badge + Typography (time) | `{ actor, action, target, timestamp, isRead }` |
+| **ProductItem** | Image + Typography (name) + Typography (price) + Button | `{ id, name, price, image, inStock }` |
+| **CommentRow** | Avatar + Typography (author) + Typography (body) + Typography (time) | `{ author, avatar, body, timestamp }` |
+| **NavigationBar** | Logo/Title + NavItem (×n) + IconButton (×0–2) | static (from nav-shell.md) |
+| **BottomTabBar** | NavItem (×n, tab variant) | static (from nav-shell.md) |
+| **EmptyState** | Image/Illustration + Typography (×2) + Button | static per screen context |
+
+**Design rule for components:** A component is the **unit of reuse**. If you see the same data shape rendered twice on different screens, those are the same component. The component owns its data contract — its props interface is stable and explicit.
+
+---
+
+### Level 4 — Templates (Screens)
+
+A screen is a **template** — a layout that composes Level 1–3 elements into a full view. Templates are not reusable components; they are the route files in forge.
+
+A template answers: "What Level 1–3 elements appear on this screen, in what arrangement, receiving what data?"
+
+**Example — Feed Screen template:**
+```
+App Shell (Tier 1):       BottomTabBar [static]
+Screen layout (Tier 3):   TopAppBar [static] → scrollable list of ArticleCard [dynamic, from ARTICLES] → SectionHeader [×2]
+Local elements (Tier 3):  HeroCarousel [screen-local, top 3 articles]
+```
+
+---
+
+### How Levels Drive DRY Reduction
+
+The DRY pass in forge Phase 2 works at **all levels**, not just component level:
+
+```
+Level 2 check first:
+  Same molecule appearing in multiple organisms?
+  → Extract it. Organisms import the molecule rather than duplicating it.
+  
+Level 3 check second:
+  Same organism appearing in multiple screens?
+  → Extract it. Screens import the component from components/.
+  
+Level 1 check throughout:
+  Same primitive with inconsistent styling across organisms?
+  → Standardize via design token. Don't create variants; fix the token.
+```
+
+**The test:** If you change one element (e.g., the font size of an ArticleCard title), does it correctly update everywhere it appears? If no — you have duplication. If yes — you have a proper component system.
+
+---
+
+### Describing Components Semantically in Prompts
+
+When prompting nano-banana for a screen, name components at their correct level. Semantic names produce dramatically more accurate outputs than layout descriptions.
+
+| Vague (layout) | Semantic (level-named) |
+|----------------|----------------------|
+| "a card with some content" | "an ArticleCard organism: 16:9 Image, H3 Typography title, Caption Typography subtitle, Category Tag" |
+| "some icons and labels at the bottom" | "a BottomTabBar with 4 NavItems: Home (house icon), Discover (compass icon), Library (bookmark icon), Profile (person icon)" |
+| "user info at the top" | "a ProfileHeader: 96px circular Avatar, H2 Typography name, Body Typography bio, StatRow ×3 (Posts/Followers/Following), outlined Button (Follow)" |
+| "a list of things" | "a vertical list of UserProfileRow compounds, each: 48px Avatar, Typography (name, H3), Typography (handle, Caption), filled Button (Follow/Following)" |
+
+Semantic descriptions give the model a mental model to work from, not just a visual layout to guess at. The output aligns with the component system rather than inventing arbitrary structure.
+
+---
+
+## 8. Screen Archetypes
 
 Common screen types and their design signatures. Every screen you design maps to one of these (or is a deliberate hybrid). Match the archetype to the design pattern.
 
@@ -247,7 +366,7 @@ Common screen types and their design signatures. Every screen you design maps to
 
 ---
 
-## 8. Cross-Screen Coherence
+## 9. Cross-Screen Coherence
 
 What makes a multi-screen app feel like *one thing* rather than a collection of screens:
 
@@ -266,7 +385,7 @@ What makes a multi-screen app feel like *one thing* rather than a collection of 
 
 ---
 
-## 9. Common Anti-Patterns
+## 10. Common Anti-Patterns
 
 Things that make screens feel undesigned:
 
@@ -287,7 +406,7 @@ Things that make screens feel undesigned:
 
 ---
 
-## 10. Translating to Nano-Banana Prompts
+## 11. Translating to Nano-Banana Prompts
 
 When generating screens with nano-banana, embed these principles explicitly in the prompt. Don't assume the model will apply design thinking automatically.
 
