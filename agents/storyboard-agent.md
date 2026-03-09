@@ -413,7 +413,104 @@ When the human approves the storyboard:
 
    Wait for confirmation. Apply any corrections, then save `ui-studio/storyboards/statechart.md`.
 
-5. **Output the completion summary:**
+5. **Extract the style seed** — this step runs automatically, no human input required.
+
+   The storyboard is a low-fidelity thumbnail. If frame agents generate screens independently by "looking at the storyboard," exact values (hex colors, type sizes, spacing) will drift screen to screen. The style seed locks those values down before any frame is generated.
+
+   ```bash
+   mkdir -p ui-studio/storyboards
+   ```
+
+   ```bash
+   amplifier tool invoke nano-banana \
+     operation=analyze \
+     image_path=ui-studio/storyboards/storyboard_final.png \
+     'prompt=Analyze the visual design system used across ALL screens in this storyboard. Extract the exact design tokens that appear consistently. Be as precise as possible — hex codes for colors, pixel values for sizes.
+
+   COLORS — list every distinct color as hex:
+   - Screen/page background
+   - Card/surface background (elevated)
+   - Primary text color
+   - Secondary text color
+   - Tertiary/muted text color
+   - Primary accent/action color
+   - Secondary accent color (if any)
+   - Border/divider color
+   - Any other distinct colors used
+
+   TYPOGRAPHY — for each visible text style:
+   - Display/Hero: size, weight, color
+   - H1/Screen title: size, weight, color
+   - H2/Section header: size, weight, color
+   - Body text: size, weight, color, line-height
+   - Label/UI text: size, weight, color
+   - Caption/metadata: size, weight, color
+   - Font family (describe visually: geometric sans, humanist sans, serif, etc.)
+
+   SPACING — approximate values in px:
+   - Screen left/right margin
+   - Vertical gap between cards/items
+   - Card internal padding
+   - Section spacing (between major sections)
+
+   BORDER RADIUS:
+   - Cards/surfaces
+   - Buttons
+   - Inputs
+   - Avatars/images (if rounded)
+
+   COMPONENT TREATMENTS:
+   - How do buttons look? (filled/outlined, color, radius, padding)
+   - How do cards look? (background, shadow/border, radius)
+   - How do list items look? (height, separator style)
+
+   Return as structured key-value pairs I can copy directly into a design constraints document.'
+   ```
+
+   Write the output to `ui-studio/storyboards/style-seed.md`:
+
+   ```markdown
+   # Style Seed
+   > Auto-extracted from storyboard_final.png. These values are the ground truth for all frame generation.
+   > If a value is uncertain, it is marked with ~.
+
+   ## Colors
+   color-background-screen: #______
+   color-background-card: #______
+   color-text-primary: #______
+   color-text-secondary: #______
+   color-text-tertiary: #______
+   color-accent-primary: #______
+   color-border: #______
+
+   ## Typography
+   font-family: ______ (e.g., "geometric sans-serif, Inter-like")
+   font-size-display: ______px, weight ______
+   font-size-h1: ______px, weight ______
+   font-size-h2: ______px, weight ______
+   font-size-body: ______px, weight ______, line-height ______
+   font-size-label: ______px, weight ______
+   font-size-caption: ______px, weight ______
+
+   ## Spacing
+   screen-margin: ______px
+   gap-between-cards: ______px
+   card-padding: ______px
+   section-gap: ______px
+
+   ## Border Radius
+   radius-card: ______px
+   radius-button: ______px
+   radius-input: ______px
+
+   ## Component Treatments
+   button-primary: ______
+   card-surface: ______
+   ```
+
+   Frame agents embed these values as hard constraints in every generation prompt. Colors do not drift because they are not inferred — they are specified.
+
+6. **Output the completion summary:**
 
    ```
    ## Screen Inventory
@@ -426,11 +523,12 @@ When the human approves the storyboard:
      ui-studio/storyboards/storyboard_final.png
      ui-studio/storyboards/screen_inventory.md
      ui-studio/storyboards/statechart.md
+     ui-studio/storyboards/style-seed.md    ← design token ground truth for all frames
    ```
 
-6. **Suggest handoff:**
+7. **Suggest handoff:**
 
-   > **Storyboard complete — [N] screens ([R] routes, [O] overlays). State chart saved. Which screen do you want to refine first? Type `/frame` and name the screen.**
+   > **Storyboard complete — [N] screens ([R] routes, [O] overlays). Style seed extracted. Which screen do you want to refine first? Type `/frame` and name the screen.**
 
 ---
 

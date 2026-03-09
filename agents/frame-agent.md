@@ -155,35 +155,57 @@ Be exhaustive. Every pixel counts.'
 
 Save the full text output of this analysis. It becomes `{screen_description}` in Step B.
 
-#### Step B: Generate using extracted description + storyboard as style reference
+#### Step B: Choose the style reference image
+
+The `reference_image_path` for generation is **not always the storyboard**. Use this priority order:
+
+```bash
+# Check for already-approved frames (highest fidelity style reference):
+ls ui-studio/frames/*/approved.png 2>/dev/null
+
+# Check for style-seed.md (locked design tokens from storyboard):
+cat ui-studio/storyboards/style-seed.md 2>/dev/null
+```
+
+| Situation | Use as `reference_image_path` | Why |
+|-----------|-------------------------------|-----|
+| **First frame ever** | `storyboard_final.png` | Nothing else exists yet |
+| **Subsequent frames** | Most visually similar `approved.png` | Full-res, human-validated, exact colors |
+| **No storyboard or approved frames** | omit | Generate from description only |
+
+**Why approved frames beat the storyboard as a style reference:** The storyboard is a multi-screen thumbnail — each panel is tiny, colors are approximate, detail is minimal. An approved frame is 2K resolution, already validated by you, and contains every exact design decision at full fidelity. When nano-banana sees an approved frame as the reference image, it has concrete ground truth to match — not a thumbnail to interpret.
+
+Pick the most visually similar approved frame (e.g., for a Detail screen, use the approved Home screen if it has the same card style; for a Settings screen, use any approved route screen that shows the nav chrome).
+
+#### Step C: Generate with style reference + locked tokens + screen spec
 
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  reference_image_path=ui-studio/storyboards/storyboard_final.png \
+  reference_image_path={style_reference_image — approved frame or storyboard per Step B} \
   output_path=ui-studio/frames/{screen-name}/v1.png \
-  'prompt=The REFERENCE IMAGE shows the full multi-screen storyboard. Use it for the visual style — color palette, typography feel, component aesthetic, overall design language — that applies across ALL screens.
+  'prompt=The REFERENCE IMAGE shows {an approved frame from this app / the full storyboard}. 
+Use it as the definitive visual style reference — match its exact colors, typography treatment, 
+component aesthetic, spacing rhythm, and design language precisely.
+
+LOCKED DESIGN TOKENS (from style-seed.md — use these exact values, do not interpret or approximate):
+{paste full contents of style-seed.md here}
+
+SCREEN SPECIFICATION (extracted directly from the storyboard panel — layout authority):
+{screen_description from Step A}
+
+PERSISTENT CHROME (from nav-shell.md — inject verbatim):
+{nav shell Persistent Elements}
 
 Your task: generate a full-resolution, pixel-perfect design for the "{screen-name}" screen.
-
-SCREEN SPECIFICATION (extracted directly from the storyboard panel by visual analysis — treat this as authoritative):
-{screen_description from Step A}
+The layout comes from the screen specification above.
+The visual style comes from the reference image and locked tokens above.
+These two sources together fully define this screen.
 
 OUTPUT SCOPE — THIS IS MANDATORY:
 Generate ONLY the app content area. The image boundary IS the screen edge.
 Do NOT include: OS window frame, macOS/Windows title bar, browser chrome, phone device bezel,
 home indicator pill, carrier/clock status bar shell, or any wrapping context whatsoever.
-If any OS or device chrome appears, blueprint and forge will generate code for elements that will never exist.
-
-PERSISTENT CHROME (from nav-shell.md — inject verbatim if available):
-{nav shell Persistent Elements}
-
-Render at full fidelity:
-- Precise spacing — padding, margins, gaps
-- Full typography hierarchy — sizes, weights, line heights
-- All interactive elements — buttons, inputs, icons
-- Realistic placeholder content
-- All backgrounds, images, and decorative elements
 
 Aspect ratio: 9:19.5 (mobile portrait). ONE screen only.' \
   aspect_ratio=9:19.5 \
@@ -191,6 +213,8 @@ Aspect ratio: 9:19.5 (mobile portrait). ONE screen only.' \
   use_thinking=true \
   number_of_images=1
 ```
+
+**The locked tokens are what prevent drift.** Without them, the model re-interprets color from a thumbnail and makes slightly different choices each time. With exact hex values in the prompt, there is no room for interpretation — the color either matches the token or it doesn't.
 
 **If no storyboard** — generate from description alone:
 
