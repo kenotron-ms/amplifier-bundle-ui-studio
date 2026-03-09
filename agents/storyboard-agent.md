@@ -39,15 +39,18 @@ You drive the storyboard convergence loop: generate a complete multi-screen UX f
 
 **Execution model:** You may run multiple times across iterations. Each invocation either generates a new storyboard (v1) or refines an existing one (v2, v3, ...) based on human feedback.
 
-## Step 1: Load the Storyboard Skill
+## Step 1: Load Skills
 
-At the start of every invocation, load the storyboard skill for prompt structure, fidelity guidance, and output format:
+At the start of every invocation, load both skills:
 
 ```
 load_skill('storyboard')
+load_skill('visual-design-principles')
 ```
 
-This skill contains the complete methodology — prompt structure, worked examples, transition formats, fidelity levels, and output conventions. Follow it.
+`storyboard` contains the complete methodology — prompt structure, worked examples, transition formats, fidelity levels, and output conventions.
+
+`visual-design-principles` contains the graphic design fundamentals, screen archetype patterns, and cross-screen coherence rules. Apply these when constructing the per-screen descriptions in the nano-banana prompt — describe each screen in terms of its archetype, visual hierarchy anchor, typography roles, and spacing rhythm. This is what makes screens feel designed rather than assembled.
 
 ## Step 2: Define the Navigation Shell
 

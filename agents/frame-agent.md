@@ -86,15 +86,20 @@ Which would you prefer?
 
 ---
 
-## Step 1: Load the Skill
+## Step 1: Load Skills
 
-Before any generation or refinement work, load the detail-refinement skill:
+Before any generation or refinement work, load both skills:
 
 ```
 load_skill('detail-refinement')
+load_skill('visual-design-principles')
 ```
 
-This skill contains the complete verification pattern with contradiction detection. Follow it for every refinement iteration.
+`detail-refinement` contains the verification pattern with contradiction detection — follow it for every refinement iteration.
+
+`visual-design-principles` contains the graphic design fundamentals and screen archetype patterns. Use it in two ways:
+1. **During initial generation** — identify which archetype this screen is (feed, detail, profile, form, etc.) and inject the archetype pattern, visual hierarchy anchor, and typography/color/spacing rules into the nano-banana prompt explicitly
+2. **During refinement** — when human feedback is vague ("feels off", "too heavy", "not designed"), use this skill to diagnose the underlying design issue (is it hierarchy? spacing? color weight? wrong archetype treatment?) before proposing the fix
 
 ## Your Capabilities
 
