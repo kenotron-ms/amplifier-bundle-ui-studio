@@ -118,37 +118,74 @@ You have access to:
 mkdir -p ui-studio/frames/{screen-name}
 ```
 
-**If storyboard is available** — pass it as `reference_image_path` so Gemini sees the full flow and maintains visual consistency:
+**If storyboard is available**, use a **two-step approach**. Do NOT skip Step A.
+
+**The problem with going straight to generate:** The storyboard is a multi-screen image — each panel is a thumbnail. Passing it directly to `generate` and saying "extract the layout" asks nano-banana to work from a tiny, low-fidelity panel. The prompt words end up carrying all the fidelity, defeating the purpose of having a visual reference. Instead: analyze first to extract what's actually visible in that panel, then generate using that as the precise spec.
+
+#### Step A: Extract the screen from the storyboard (analyze)
+
+Use `analyze` to have nano-banana look directly at the target screen's panel and describe everything it can see. This extracted description becomes the authoritative layout spec for generation — grounded in what is actually shown, not guessed from words.
+
+```bash
+amplifier tool invoke nano-banana \
+  operation=analyze \
+  image_path=ui-studio/storyboards/storyboard_final.png \
+  'prompt=Focus ONLY on the "{screen-name}" screen panel in this multi-screen storyboard. Ignore all other screens completely.
+
+Describe this specific panel in exhaustive visual detail so that someone who cannot see the image could recreate it precisely:
+
+OVERALL LAYOUT: Top to bottom, what are the major sections? How much vertical space does each occupy?
+
+COMPONENTS: List every visible component — its type, position, size relative to the screen, and visual treatment.
+
+TYPOGRAPHY: Every text element — content, approximate size (relative: small/medium/large/hero), weight (light/regular/medium/bold), color, alignment.
+
+COLORS: Every distinct color — background, surfaces, text, accents, borders. Describe as precisely as possible (hex if determinable, or precise description like "deep navy #0F0F1A").
+
+SPACING: Approximate margins, padding, gaps between elements.
+
+NAVIGATION CHROME: Exact description of any nav bar, tab bar, or header — items, icons, active state, position.
+
+IMAGES / ICONS: Any photos, illustrations, or icon elements — description of what they depict.
+
+INTERACTIVE ELEMENTS: Buttons, inputs, toggles — their label, style, and position.
+
+Be exhaustive. Every pixel counts.'
+```
+
+Save the full text output of this analysis. It becomes `{screen_description}` in Step B.
+
+#### Step B: Generate using extracted description + storyboard as style reference
 
 ```bash
 amplifier tool invoke nano-banana \
   operation=generate \
-  reference_image_path=ui-studio/storyboards/storyboard-final.png \
+  reference_image_path=ui-studio/storyboards/storyboard_final.png \
   output_path=ui-studio/frames/{screen-name}/v1.png \
-  'prompt=You can SEE the full multi-screen storyboard in the reference image above.
+  'prompt=The REFERENCE IMAGE shows the full multi-screen storyboard. Use it for the visual style — color palette, typography feel, component aesthetic, overall design language — that applies across ALL screens.
 
-Generate a detailed, pixel-level screen design for the "{screen-name}" screen.
+Your task: generate a full-resolution, pixel-perfect design for the "{screen-name}" screen.
+
+SCREEN SPECIFICATION (extracted directly from the storyboard panel by visual analysis — treat this as authoritative):
+{screen_description from Step A}
 
 OUTPUT SCOPE — THIS IS MANDATORY:
 Generate ONLY the app content area. The image boundary IS the screen edge.
 Do NOT include: OS window frame, macOS/Windows title bar, browser chrome, phone device bezel,
 home indicator pill, carrier/clock status bar shell, or any wrapping context whatsoever.
-If any OS or device chrome appears in this output, blueprint and forge will misidentify it
-as app components and generate code for elements that will never exist in the running app.
+If any OS or device chrome appears, blueprint and forge will generate code for elements that will never exist.
 
-Extract from the storyboard:
-- The visual style, color palette, and typography established across all screens
-- The layout structure shown for this screen specifically
-- Navigation elements and how they connect to other screens
+PERSISTENT CHROME (from nav-shell.md — inject verbatim if available):
+{nav shell Persistent Elements}
 
-Refine to pixel level:
+Render at full fidelity:
 - Precise spacing — padding, margins, gaps
 - Full typography hierarchy — sizes, weights, line heights
-- All interactive elements — buttons, inputs, icons, navigation
+- All interactive elements — buttons, inputs, icons
 - Realistic placeholder content
-- All backgrounds and decorative elements
+- All backgrounds, images, and decorative elements
 
-Aspect ratio: 9:19.5 (mobile portrait). This is ONE screen, not the full flow.' \
+Aspect ratio: 9:19.5 (mobile portrait). ONE screen only.' \
   aspect_ratio=9:19.5 \
   resolution=2K \
   use_thinking=true \
